@@ -38,7 +38,7 @@ const Navbar = () => {
                 <DropDownItem img = {profileIcon} text = {'My Profile'} onClick={() => navigate('/profile')}/>
                 <DropDownItem img = {inboxIcon} text = {'Inbox'} />
                 <DropDownItem img = {settingsIcon} text = {'Settings'} />
-                <DropDownItem img = {logoutIcon} text = {'Logout'} />
+                <DropDownItem img = {logoutIcon} text = {'Logout'} onClick={() =>navigate('/signinup')}/>
             </ul>
           </div>
         </div>

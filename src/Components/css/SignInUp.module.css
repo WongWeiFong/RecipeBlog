@@ -1,0 +1,105 @@
+.container {
+    width: 100%;
+    max-width: 2000px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  
+  .form-container {
+    position: relative;
+    width: 800px;
+    height: 500px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+    display: flex;
+  }
+  
+  .form {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40%;
+    padding: 0 40px;
+    text-align: center;
+    transition: all 0.6s ease-in-out;
+  }
+  
+  .sign-in-form {
+    left: 0;
+  }
+  
+  .sign-up-form {
+    right: 0;
+    opacity: 0;
+    transform: translateY(-50%) translateX(100%);
+  }
+  
+  .overlay-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 50%;
+    height: 100%;
+    background-color: #ff416c;
+    color: white;
+    transition: all 0.6s ease-in-out;
+  }
+  
+  .overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+  
+  .overlay-panel {
+    text-align: center;
+    padding: 40px;
+  }
+  
+  .right-panel-active .sign-in-form {
+    transform: translateY(-50%) translateX(-100%);
+    opacity: 0;
+  }
+  
+  .right-panel-active .sign-up-form {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+  
+  .right-panel-active .overlay-container {
+    transform: translateX(-100%);
+  }
+  
+  .input {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .btn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #ff416c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .ghost {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  

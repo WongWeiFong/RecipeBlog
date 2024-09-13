@@ -1,7 +1,9 @@
 .profile-container {
     width: 100%;
+    max-height: 600px;
     max-width: 600px;
     margin: 10% auto;
+    margin-bottom: 5%;
     padding: 20px;
     border-radius: 10px;
     background-color: #f4f4f4;
