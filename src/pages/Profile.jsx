@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React, { useEffect, useState } from 'react';
 import profilestyles from '../Components/css/Profile.module.css';
 
 const Profile = () => {
@@ -17,11 +17,17 @@ const Profile = () => {
         setName(data.name);
         setEmail(data.email);
         setPassword(data.password);
-        setPreview(data.profilePicture);
+        // console.log(data.profilePicture);
+        // console.log('Profile Picture URL:', `http://localhost:3005/uploads/${data.profilePicture}`);
+
+        if (data.profilePicture) {
+          // Display the image preview
+          setPreview(`http://localhost:3005/uploads/${data.profilePicture}`);
+        }
       })
       .catch(error => console.error('Error fetching user data: ', error));
   };
-
+  
   useEffect(() => {
     fetchUserData();
   }, [userId]);
@@ -30,7 +36,7 @@ const Profile = () => {
     const file = e.target.files[0];
     if (file) {
       setProfilePicture(file);
-      setPreview(URL.createObjectURL(file));
+      setPreview(URL.createObjectURL(file));  // Create a preview for the selected file
     }
   }
 
@@ -38,23 +44,22 @@ const Profile = () => {
   const handleSaveChanges = (e) => {
     e.preventDefault();
 
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('email', email);
+    formData.append('password', password);
+    if (profilePicture) {
+      formData.append('profilePicture', profilePicture);
+    }
+
     fetch(`http://localhost:3005/profile/${userId}`, {
       method: 'PUT',
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-        profilePicture: profilePicture ? preview : null // Assuming it's base64 encoded
-      }),
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      body: formData
     })
     .then(() => {
-      // Logic to handle saving changes (e.g., API request)
-    alert('Profile changes saved!');
+      alert('Profile changes saved!');
     })
-    .catch(error => console.error('Error saving changes: ', error));    
+    .catch(error => console.error('Error saving changes: ', error));
   };
 
   const handleCancel = () => {
@@ -80,26 +85,26 @@ const Profile = () => {
         {/* Name Field */}
         <div className={profilestyles["formGroup"]}>
           <label htmlFor="name">Name</label>
-          <input type="text" id="name" value={name} onChange={(e) =>setName(e.target.value)} required />
+          <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
         {/* Email Field */}
         <div className={profilestyles["formGroup"]}>
           <label htmlFor="email">Email</label>
-          <input type="email" id="email" value={email} onChange={(e) =>setEmail(e.target.value)} required />
+          <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
         {/* Password Field */}
         <div className={profilestyles["formGroup"]}>
           <label htmlFor="password">Password</label>
-          <input type="password" id="password" value={password} onChange={(e) =>setPassword(e.target.value)} required />
+          <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
         {/* Button */}
         <div className={profilestyles["formActions"]}>
           <button type="submit" className={profilestyles["btnSave"]}>Save Changes</button>
           <button type="button" className={profilestyles["btnCancel"]} onClick={handleCancel}>Cancel</button>
-          </div>
+        </div>
       </form>
     </div>
-  )
+  );
 }
 
-export default Profile
+export default Profile;
