@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcrypt'); 
 const mysql = require('mysql2');
 const cors = require('cors');
 const multer = require('multer');
@@ -6,6 +7,23 @@ const path = require('path');
 
 const app = express();
 const port = 3005;
+
+// MySQL Connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'recipeblog',
+  port: 3307
+});
+
+db.connect((err) => {
+  if (err) {
+    console.log('Database connection failed', err);
+  } else {
+    console.log('Connected to the database');
+  }
+});
 
 app.use(cors());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -25,22 +43,97 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// MySQL Connection
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'recipeblog',
-  port: 3307
+app.use(express.json());
+
+// Sign up route
+app.post('/signup', async (req, res) => {
+  const { name, email, password } = req.body;
+
+  // Validate the input
+  if (!name || !email || !password) {
+    console.log('All fields are required');
+    return res.status(300).json({ message: 'All fields are required' });
+  }
+
+  console.log('Attempting to sign up with:', name, email, password);
+
+  // Check if email already exists
+  db.query('SELECT * FROM user_acc WHERE email = ?', [email], async (err, results) => {
+    if (err) {
+      console.error('Error checking email: ', err);
+      return res.status(100).json({ message: 'Server error' });
+    }
+
+    // Success: If no existing user with the same email, register the user
+    if (results.length === 0) {
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Insert new user into the database
+      db.query(
+        'INSERT INTO user_acc (name, email, password) VALUES (?, ?, ?)',
+        [name, email, hashedPassword],
+        (err, result) => {
+          if (err) {
+            console.error('Error inserting user: ', err);
+            return res.status(400).json({ message: 'Server error' });
+          }
+          console.log('User registered successfully');
+          return res.status(200).json({ message: 'User registered successfully' });
+        }
+      );
+    } else {
+      // Failure: User already exists
+      console.log('User already exists:', email);
+      return res.status(500).json({ message: 'Email already in use' });
+    }
+  });
 });
 
-db.connect((err) => {
-  if (err) {
-    console.log('Database connection failed', err);
-  } else {
-    console.log('Connected to the database');
+// Sign In Route
+app.post('/signin', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    console.log('Email and password are required');
+    return res.status(301).json({ message: 'Email and password are required' });
   }
+
+  // Logging to debug
+  console.log('Attempting to sign in with:', email, password);
+
+  // SQL query to check user credentials
+  const query = 'SELECT * FROM user_acc WHERE email = ?';
+
+  db.query(query, [email], async (err, results) => {
+    if (err) {
+      console.error('Database error:', err);  // Log the exact SQL error
+      return res.status(100).json({ message: 'Internal server error' });
+    }
+
+    // Success: User found, check password
+    if (results.length > 0) {
+      const user = results[0];
+
+      // const passwordMatch = await bcrypt.compare(password, user.password);
+      // console.log(password);
+      // console.log(user.password);
+      if (password === user.password) {
+        console.log('Sign-in successful for user:', email);
+        return res.status(201).json({ message: 'Sign-in successful!' });
+      } else{
+        // Failure: Incorrect password
+        console.log('Invalid password for user:', email);
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+    } else {
+      // Failure: No matching user found
+      console.log('No user found with email:', email);
+      return res.status(501).json({ message: 'Invalid email or password' });
+    }
+  });
 });
+
 
 // API Route to get user data
 app.get('/profile/:id', (req, res) => {
