@@ -73,7 +73,7 @@ app.use(express.json());
 
 // Sign up route
 app.post('/signup', async (req, res) => {
-  console.log("Sign upppp request received");
+  console.log("Sign up request received");
   const { name, email, password } = req.body;
 
   // Validate the input
