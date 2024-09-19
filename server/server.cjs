@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const bcrypt = require('bcrypt'); 
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -25,7 +26,28 @@ db.connect((err) => {
   }
 });
 
-app.use(cors());
+app.use(session({
+  secret: 'SecretKey', // Replace with a strong, secure key
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set true if using HTTPS
+    httpOnly: true, // Helps prevent cross-site scripting attacks
+    maxAge: 1000 * 60 * 60 * 24 // 1-day session duration
+  }
+}));
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// app.use(cors({
+//   origin: "http://localhost:5173",  // Update with your frontend URL
+//   credentials: true  // Allow credentials (cookies) to be sent
+// }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // app.use(express.static('uploads'));
 
@@ -45,8 +67,13 @@ const upload = multer({ storage });
 
 app.use(express.json());
 
+// app.get('/signup', (req, res) => {
+//   res.json(req.body); 
+// })
+
 // Sign up route
 app.post('/signup', async (req, res) => {
+  console.log("Sign upppp request received");
   const { name, email, password } = req.body;
 
   // Validate the input
@@ -90,8 +117,13 @@ app.post('/signup', async (req, res) => {
   });
 });
 
+app.get('/signin', (req, res) => {
+  res.json(req.session.userId);  
+})
+
 // Sign In Route
-app.post('/signin', (req, res) => {
+app.post('/signin', async (req, res) => {
+  console.log("Sign in request received");
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -105,7 +137,7 @@ app.post('/signin', (req, res) => {
   // SQL query to check user credentials
   const query = 'SELECT * FROM user_acc WHERE email = ?';
 
-  db.query(query, [email], async (err, results) => {
+  db.query(query, [email], (err, results) => {
     if (err) {
       console.error('Database error:', err);  // Log the exact SQL error
       return res.status(100).json({ message: 'Internal server error' });
@@ -120,20 +152,58 @@ app.post('/signin', (req, res) => {
       // console.log(user.password);
       if (password === user.password) {
         console.log('Sign-in successful for user:', email);
+        
+        // **SET the user ID in the session**
+        req.session.userId = user.user_id;
+        console.log('User signed in with ID12321:', req.session.userId);  // Make sure this is printed
         return res.status(201).json({ message: 'Sign-in successful!' });
-      } else{
-        // Failure: Incorrect password
+      } else {
         console.log('Invalid password for user:', email);
         return res.status(401).json({ message: 'Invalid email or password' });
       }
     } else {
-      // Failure: No matching user found
       console.log('No user found with email:', email);
-      return res.status(501).json({ message: 'Invalid email or password' });
+      return res.status(501).json({ message: 'User not found' });
     }
   });
 });
 
+////////////////////////
+// Route to check if user is authenticated
+app.get('/check-auth', (req, res) => {
+  console.log('Session at /check-auth:', req.session);
+  //console log got
+  console.log("Session user id = :", req.session.userId);
+  if (req.session.userId) {
+    res.status(201).json({ isAuthenticated: true, userId: req.session.userId });
+  } else {
+    res.status(401).json({ isAuthenticated: false });
+  }
+});
+
+// Middleware to check if user is authenticated for protected routes
+const isAuthenticated = (req, res, next) => {
+  console.log('Session in isAuthenticated12321:', req.session);  
+  if (req.session.userId) {
+    next();
+  } else {
+    res.status(401).json({ message: 'Unauthorized123' });
+  }
+};
+
+// Example of a protected route
+app.get('/profile', isAuthenticated, (req, res) => {
+  console.log('User ID in session12321:', req.session.userId); 
+  const userId = req.session.userId;
+  const sql = 'SELECT name, email FROM user_acc WHERE user_id = ?';
+  db.query(sql, [userId], (err, result) => {
+    if (err) {
+      return res.status(400).json({ message: 'Server error' });
+    }
+    res.status(201).json(result[0]);
+  });
+});
+///////////////////////
 
 // API Route to get user data
 app.get('/profile/:id', (req, res) => {

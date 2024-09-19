@@ -20,10 +20,13 @@ const SignInUp = () => {
     e.preventDefault();
     
     try {
+      console.log("try123");
       const response = await axios.post('http://localhost:3005/signup', {
         name: signUpName,
         email: signUpEmail,
         password: signUpPassword
+      }, {
+        withCredentials: true
       });
 
       if (response.status === 200) {
@@ -50,6 +53,8 @@ const SignInUp = () => {
       const response = await axios.post('http://localhost:3005/signin', {
         email: signInEmail,
         password: signInPassword
+      }, {
+        withCredentials: true
       });
 
       // Handle the response from the server

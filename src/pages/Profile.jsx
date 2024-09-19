@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import profilestyles from '../Components/css/Profile.module.css';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const [name, setName] = useState('');
@@ -7,10 +8,34 @@ const Profile = () => {
   const [password, setPassword] = useState('');
   const [profilePicture, setProfilePicture] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [userId, setUserId] = useState(null);
 
-  const userId = 1;
+  // const userId = 1;
+  const navigate = useNavigate();
+
+   // Check if the user is authenticated and get the user ID from session
+   const checkAuth = () => {
+    fetch('http://localhost:3005/check-auth',{
+    method: "GET",
+    credentials: "include",
+  })
+      .then(response => response.json())
+      // .then(data =>console.log(data))
+      .then(data => {
+        console.log("authentication dataaaaaaaaL:",data);
+        if (data.isAuthenticated) {
+          setUserId(data.userId);  // Set the userId from the session
+        } else {
+          // If not authenticated, redirect to sign-in page
+          alert("Please sign in your account first");
+          navigate('/signinup');
+        }
+      })
+      .catch(error => console.error('Error checking authentication: ', error));
+  };
 
   const fetchUserData = () => {
+    if (!userId) return;  // Avoid fetching if userId is not set
     fetch(`http://localhost:3005/profile/${userId}`)
       .then(response => response.json())
       .then(data => {
@@ -27,9 +52,15 @@ const Profile = () => {
       })
       .catch(error => console.error('Error fetching user data: ', error));
   };
+
+  useEffect(() => {
+    checkAuth();  // Check authentication on component mount
+  }, []);
   
   useEffect(() => {
-    fetchUserData();
+    if (userId) {
+      fetchUserData();  // Fetch user data if authenticated
+    }
   }, [userId]);
 
   const handleProfilePictureChange = (e) => {
