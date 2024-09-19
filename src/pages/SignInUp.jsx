@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from "../Components/Navbar/Navbar";
 import styles from "../Components/css/SignInUp.module.css";
@@ -14,7 +15,7 @@ const SignInUp = () => {
   const handleSlide = () => {
     setIsSignInActive(!isSignInActive);
   };
-
+  const navigate = useNavigate();
   // Handle Sign Up Submit (optional)
   const handleSignUpSubmit = async (e) => {
     e.preventDefault();
@@ -60,6 +61,7 @@ const SignInUp = () => {
       // Handle the response from the server
       if (response.status === 201) {
         alert('Sign-in successful!');
+        navigate('/profile');
       } 
     } catch (error) {
       if (error.response && error.response.status === 501) {
