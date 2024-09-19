@@ -19,6 +19,20 @@ const Navbar = () => {
       </li>
     );
   }
+  const handleLogout = () => {
+    fetch('http://localhost:3005/logout', {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.message === 'Logout successful') {
+          alert('You have been logged out.');
+          navigate('/signinup');  // Redirect to sign-in page
+        }
+      })
+      .catch(error => console.error('Error logging out: ', error));
+  };
 
   return (
     <div className={navbarstyles['nav']}>
@@ -38,7 +52,8 @@ const Navbar = () => {
                 <DropDownItem img = {profileIcon} text = {'My Profile'} onClick={() => navigate('/profile')}/>
                 <DropDownItem img = {inboxIcon} text = {'Inbox'} />
                 <DropDownItem img = {settingsIcon} text = {'Settings'} />
-                <DropDownItem img = {logoutIcon} text = {'Logout'} onClick={() =>navigate('/signinup')}/>
+                <DropDownItem img = {logoutIcon} text = {'Logout'} onClick={handleLogout}/>
+                {/* <DropDownItem img = {logoutIcon} text = {'Logout'} onClick={() =>navigate('/signinup')}/> */}
             </ul>
           </div>
         </div>

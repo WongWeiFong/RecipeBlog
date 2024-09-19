@@ -168,6 +168,16 @@ app.post('/signin', async (req, res) => {
   });
 });
 
+app.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ message: 'Logout failed' });
+    }
+    res.clearCookie('connect.sid');  // Clear the session cookie
+    return res.status(200).json({ message: 'Logout successful' });
+  });
+});
+
 ////////////////////////
 // Route to check if user is authenticated
 app.get('/check-auth', (req, res) => {
