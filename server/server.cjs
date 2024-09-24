@@ -49,12 +49,11 @@ app.use(cors({
 //   credentials: true  // Allow credentials (cookies) to be sent
 // }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// app.use(express.static('uploads'));
 
 // Setup for multer to handle file uploads
-const storage = multer.diskStorage({
+const profileStorage  = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');  // Directory to save the file
+    cb(null, 'uploads/profile-pictures/');  // Directory to save the file
   },
   filename: (req, file, cb) => {
     console.log('Original filename:', file.originalname);
@@ -63,7 +62,17 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const postStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/post-images/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  }
+});
+
+const uploadProfile = multer({ storage: profileStorage });
+const uploadPost = multer({ storage: postStorage });
 
 app.use(express.json());
 
@@ -229,8 +238,8 @@ app.get('/profile/:id', (req, res) => {
 });
 
 // API Route to update user data
-app.put('/profile/:id', upload.single('profilePicture'), (req, res) => {
-  console.log("File upload details:", req.file);
+app.put('/profile/:id', uploadProfile.single('profilePicture'), (req, res) => {
+  console.log("File uploadProfile details:", req.file);
   const userId = req.params.id;
   const { name, email, password } = req.body;
   const profilePicture = req.file ? req.file.originalname : null;  // Get the original filename
@@ -244,6 +253,26 @@ app.put('/profile/:id', upload.single('profilePicture'), (req, res) => {
     }
   });
 });
+
+// Route for creating a post
+app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'pictures', maxCount: 10 }]), (req, res) => {
+  const { title, recipeTime, description } = req.body;
+  const coverImage = req.files.coverImage ? req.files.coverImage[0].filename : null;
+  const pictures = req.files.pictures ? req.files.pictures.map(file => file.filename) : [];
+
+  const sql = 'INSERT INTO post (user_id, title, post_date, recipe_time, cover_image, pictures, description) VALUES (?, ?, NOW(), ?, ?, ?, ?)';
+  db.query(sql, [1, title, recipeTime, coverImage, JSON.stringify(pictures), description], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error saving post to database' });
+    }
+    res.json({ message: 'Post created successfully' });
+  });
+});
+
+app.get('/create-post', (req, res) => {
+  res.json(sql);  
+})
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

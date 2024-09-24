@@ -6,6 +6,7 @@ import Explore from "./pages/Explore";
 import Contact from "./pages/Contact";
 import Profile from "./pages/Profile";
 import SignInUp from "./pages/SignInUp";
+import CreatePost from "./pages/CreatePost";
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/signinup" element={<SignInUp />} />
+        <Route path="/createpost" element={<CreatePost/>} />
       </Routes>
     </BrowserRouter>
   );
