@@ -255,22 +255,33 @@ app.put('/profile/:id', uploadProfile.single('profilePicture'), (req, res) => {
 });
 
 // Route for creating a post
-app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'pictures', maxCount: 10 }]), (req, res) => {
+app.put('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'pictures', maxCount: 10 }]), (req, res) => {
+  try{
+  console.log("Create post request received");
+    // Check if the user is authenticated
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
   const { title, recipeTime, description } = req.body;
   const coverImage = req.files.coverImage ? req.files.coverImage[0].filename : null;
   const pictures = req.files.pictures ? req.files.pictures.map(file => file.filename) : [];
 
   const sql = 'INSERT INTO post (user_id, title, post_date, recipe_time, cover_image, pictures, description) VALUES (?, ?, NOW(), ?, ?, ?, ?)';
-  db.query(sql, [1, title, recipeTime, coverImage, JSON.stringify(pictures), description], (err, result) => {
+  db.query(sql, [userId, title, recipeTime, coverImage, JSON.stringify(pictures), description], (err, result) => {
     if (err) {
       return res.status(500).json({ error: 'Error saving post to database' });
     }
     res.json({ message: 'Post created successfully' });
   });
+}catch (error) {
+    console.error('Unexpected error:', error);
+    res.status(500).send('Server error');
+  }
 });
 
 app.get('/create-post', (req, res) => {
-  res.json(sql);  
+  res.json(req.session.userId);
 })
 
 

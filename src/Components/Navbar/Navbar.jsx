@@ -84,7 +84,7 @@ const Navbar = () => {
               <h3>Wong Wei Fong<br/><span>5-Star Michelin Chef</span></h3>
               <ul>
                   <DropDownItem img = {profileIcon} text = {'My Profile'} onClick={() => navigate('/profile')}/>
-                  <DropDownItem img = {inboxIcon} text = {'Inbox'} />
+                  <DropDownItem img = {inboxIcon} text = {'Inbox'} onClick={() => navigate('/createpost')} />
                   <DropDownItem img = {settingsIcon} text = {'Settings'} />
                   <DropDownItem img = {logoutIcon} text = {'Logout'} onClick={handleLogout}/>
                   {/* <DropDownItem img = {logoutIcon} text = {'Logout'} onClick={() =>navigate('/signinup')}/> */}

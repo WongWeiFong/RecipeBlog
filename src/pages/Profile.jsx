@@ -18,7 +18,7 @@ const Profile = () => {
     fetch('http://localhost:3005/check-auth',{
     method: "GET",
     credentials: "include",
-  })
+    })
       .then(response => response.json())
       // .then(data =>console.log(data))
       .then(data => {

@@ -1,12 +1,42 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import poststyles from '../Components/css/CreatePost.module.css';
+import { useNavigate } from 'react-router-dom';
+// import checkConnection from '../../server/checkConnection';
 
 const CreatePost = () => {
+  const [userId, setUserId] = useState(null);
   const [title, setTitle] = useState('');
   const [recipeTime, setRecipeTime] = useState('');
   const [description, setDescription] = useState('');
   const [coverImage, setCoverImage] = useState(null);
   const [pictures, setPictures] = useState([]);
+
+  const navigate = useNavigate();
+
+  // Check if the user is authenticated and get the user ID from session
+  const checkAuth = () => {
+   fetch('http://localhost:3005/check-auth',{
+   method: "GET",
+   credentials: "include",
+   })
+     .then(response => response.json())
+     // .then(data =>console.log(data))
+     .then(data => {
+       console.log("authentication dataaaaaaaaL:",data);
+       if (data.isAuthenticated) {
+         setUserId(data.userId);  // Set the userId from the session
+       } else {
+         // If not authenticated, redirect to sign-in page
+         alert("Please sign in before creating posts");
+         navigate('/signinup');
+       }
+     })
+     .catch(error => console.error('Error checking authentication: ', error));
+ };
+
+ useEffect(() => {
+    checkAuth();  // Check authentication on component mount
+  }, []);
 
   const handleCoverImageChange = (e) => {
     setCoverImage(e.target.files[0]);
@@ -20,6 +50,7 @@ const CreatePost = () => {
     e.preventDefault();
 
     const formData = new FormData();
+    formData.append('userId', userId);
     formData.append('title', title);
     formData.append('recipeTime', recipeTime);
     formData.append('description', description);
@@ -29,8 +60,9 @@ const CreatePost = () => {
     });
 
     fetch('http://localhost:3005/create-post', {
-      method: 'POST',
+      method: 'PUT',
       body: formData,
+      credentials: 'include',
     })
       .then((response) => response.json())
       .then((data) => {
