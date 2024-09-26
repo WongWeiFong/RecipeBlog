@@ -186,12 +186,16 @@ return (
             <textarea id={`step-${index + 1}`} value={step} onChange={(e) => handleStepChange(index, e.target.value)} 
             onInput={handleAutoResize}
             rows="4" />
-            <button type="button" onClick={() => removeStep(index)} className={poststyles.removeStepButton}>
+            <button type="button" onClick={() => removeStep(index)} 
+            className={poststyles.removeStepButton}
+            disabled={steps.length === 1}>
               Remove Step
             </button>
           </div>
         ))}
-        <button type="button" onClick={addStep} className={poststyles.addStepButton}>
+        <button type="button" onClick={addStep} 
+        className={poststyles.addStepButton}>
+        {/* disabled={steps.length === 10}> */}
           + Add Step
         </button>
       </div>
