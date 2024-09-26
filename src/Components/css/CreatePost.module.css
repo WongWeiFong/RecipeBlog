@@ -1,74 +1,153 @@
-.create-post-container {
-    max-width: 800px;
-    margin: 10% auto;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .create-post-container h1 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #333;
-  }
-  
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 15px;
-  }
-  
-  .form-group label {
-    font-size: 16px;
-    margin-bottom: 5px;
-    color: #555;
-  }
-  
-  .form-group input[type="text"],
-  .form-group input[type="file"],
-  .form-group textarea {
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    outline: none;
-  }
-  
-  .form-group textarea {
-    min-height: 150px;
-    resize: vertical;
-  }
-  
-  .form-group input[type="file"] {
-    padding: 5px;
-  }
-  
-  .btn-submit {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    background-color: #28a745;
-    color: white;
-    font-size: 16px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .btn-submit:hover {
-    background-color: #218838;
-  }
-  
-  @media (max-width: 768px) {
-    .create-post-container {
-      padding: 15px;
-    }
-  
-    .btn-submit {
-      font-size: 14px;
-      padding: 10px;
-    }
-  }
-  
+.createPostContainer {
+  width: 40%;
+  margin: 10% auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* .createPostContainer {
+  width: 50%;
+  margin: 10% auto;
+} */
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: bold;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.formGroup textarea {
+  width: 100%;
+  resize: none;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.alignment {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.imagePreviewContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 300px;
+  height: 300px;
+  border: 1px dashed #ccc;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.coverPreview {
+  /* margin-top: 100%; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 300px;
+  max-height: 300px;
+  object-fit: cover;
+  height: auto;
+}
+
+.placeholder {
+  font-size: 14px;
+  color: #aaa;
+  text-align: center;
+}
+
+.timeInputContainer {
+  display: flex;
+  align-items: center;
+}
+
+.timeInputContainer input {
+  margin-right: 10px;
+}
+
+
+.stepsContainer {
+  margin-top: 20px;
+}
+
+.stepsContainer h3 {
+  margin-bottom: 15px;
+  font-size: 40px;
+}
+
+.addStepButton {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.stepGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Adjust space between textarea and button */
+  margin-bottom: 20px;
+}
+
+.stepGroup textarea {
+  resize: none;
+  flex: 1; /* Make the textarea take the full width */
+}
+
+.removeStepButton {
+  padding: 5px 10px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.removeStepButton:hover {
+  background-color: #d32f2f;
+}
+
+/* .removeStepButton {
+  margin-top: 5px;
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.removeStepButton:hover {
+  background-color: #ff1a1a;
+} */
+
+.timeInputContainer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.submitButton {
+  background-color: #f39c12;
+  color: white;
+  padding: 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+}

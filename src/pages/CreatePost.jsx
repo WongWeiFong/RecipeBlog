@@ -7,9 +7,11 @@ const CreatePost = () => {
   const [userId, setUserId] = useState(null);
   const [title, setTitle] = useState('');
   const [recipeTime, setRecipeTime] = useState('');
+  const [timeUnit, setTimeUnit] = useState('minutes');
   const [description, setDescription] = useState('');
   const [coverImage, setCoverImage] = useState(null);
-  const [pictures, setPictures] = useState([]);
+  const [steps, setSteps] = useState(['']); // For handling multiple steps
+  const [preview, setPreview] = useState(null);
 
   const navigate = useNavigate();
 
@@ -39,13 +41,67 @@ const CreatePost = () => {
   }, []);
 
   const handleCoverImageChange = (e) => {
-    setCoverImage(e.target.files[0]);
+    const file = e.target.files[0];
+    if (file) {
+      setCoverImage(file);
+      setPreview(URL.createObjectURL(file));  // Preview for cover image
+    }
   };
 
-  const handlePicturesChange = (e) => {
-    setPictures([...e.target.files]);
+   // Handle dynamic height adjustment for textareas
+  const handleAutoResize = (e) => {
+    e.target.style.height = 'auto'; // Reset the height to auto to recalculate
+    e.target.style.height = `${e.target.scrollHeight}px`; // Set the height dynamically
   };
 
+  const handleStepChange = (index, value) => {
+    const newSteps = [...steps];
+    newSteps[index] = value;
+    setSteps(newSteps);
+  };
+
+  const addStep = () => {
+    setSteps([...steps, '']); // Add a new empty step
+  };
+
+  const removeStep = (index) => {
+    const newSteps = [...steps];
+    newSteps.splice(index, 1); // Remove step at the specified index
+    setSteps(newSteps);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const formData = {
+      title,
+      recipeTime: `${recipeTime} ${timeUnit}`,
+      description, // Include description in form data
+      coverImage, // You may need to convert this to a URL or handle file uploads separately
+      steps, // This is an array of steps
+    };
+
+    fetch('http://localhost:3005/create-post', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+      // headers: {
+      //   'Content-Type': 'application/json',
+      // },
+      // body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.message === 'Post created successfully') {
+          alert('Recipe created!');
+          nagivate("/explore");
+          // Redirect or reset form
+        }
+      })
+      .catch((error) => console.error('Error:', error));
+  };
+  
+/*
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -73,35 +129,79 @@ const CreatePost = () => {
         console.error('Error creating post:', error);
       });
   };
+*/
+return (
+  <div className={poststyles.createPostContainer}>
+    <h1>Create a New Recipe</h1>
+    <form onSubmit={handleSubmit}>
+      {/* Title */}
+      <div className={poststyles.formGroup}>
+        <label htmlFor="title">Recipe Title</label>
+        <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+      </div>
+      
+      {/* Description */}
+      <div className={poststyles.formGroup}>
+        <label htmlFor="description">Recipe Description</label>
+        <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} 
+        onInput={handleAutoResize}
+        rows="5" 
+        placeholder="Briefly introduce your food" 
+        required />
+      </div>
 
-  return (
-    <div className={poststyles['create-post-container']}>
-      <h1>Create Recipe Post</h1>
-      <form onSubmit={handleSubmit}>
-        <div className={poststyles['form-group']}>
-          <label htmlFor="title">Title</label>
-          <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+      {/* Cover Image */}
+      <div className={poststyles.formGroup}>
+        <label>Cover Image</label>
+        <div className={poststyles.alignment}>
+          <div className={poststyles.imagePreviewContainer} onClick={() => document.getElementById('coverImage').click()}>
+            {preview ? (<img src={preview} alt="Cover Preview" className={poststyles.coverPreview} />
+            ) : (
+              <div className={poststyles.placeholder}>Click to upload an image</div>
+            )}
+          </div>
+          <input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} style={{ display: 'none' }} />
         </div>
-        <div className={poststyles['form-group']}>
-          <label htmlFor="recipeTime">Recipe Time</label>
-          <input type="text" id="recipeTime" value={recipeTime} onChange={(e) => setRecipeTime(e.target.value)} required />
+      </div>
+
+      {/* Recipe Time */}
+      <div className={poststyles.formGroup}>
+          <label htmlFor="recipeTime">Cooking Time</label>
+          <div className={poststyles.timeInputContainer}>
+            <input type="number" id="recipeTime" value={recipeTime} onChange={(e) => setRecipeTime(e.target.value)} min="1" required />
+            <select value={timeUnit} onChange={(e) => setTimeUnit(e.target.value)}>
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+              <option value="days">Days</option>
+            </select>
+          </div>
         </div>
-        <div className={poststyles['form-group']}>
-          <label htmlFor="description">Description</label>
-          <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
-        </div>
-        <div className={poststyles['form-group']}>
-          <label htmlFor="coverImage">Cover Image</label>
-          <input type="file" id="coverImage" accept="image/*" onChange={handleCoverImageChange} required />
-        </div>
-        <div className={poststyles['form-group']}>
-          <label htmlFor="pictures">Additional Pictures</label>
-          <input type="file" id="pictures" accept="image/*" multiple onChange={handlePicturesChange} />
-        </div>
-        <button type="submit" className={poststyles['btn-submit']}>Submit Post</button>
-      </form>
-    </div>
-  );
+
+      {/* Steps */}
+      <div className={poststyles.stepsContainer}>
+        <h3>Steps</h3>
+        {steps.map((step, index) => (
+          <div key={index} className={poststyles.stepGroup}>
+            <label htmlFor={`step-${index + 1}`}>Step {index + 1}</label>
+            <textarea id={`step-${index + 1}`} value={step} onChange={(e) => handleStepChange(index, e.target.value)} 
+            onInput={handleAutoResize}
+            rows="4" />
+            <button type="button" onClick={() => removeStep(index)} className={poststyles.removeStepButton}>
+              Remove Step
+            </button>
+          </div>
+        ))}
+        <button type="button" onClick={addStep} className={poststyles.addStepButton}>
+          + Add Step
+        </button>
+      </div>
+      <br/>
+
+      {/* Submit Button */}
+      <button type="submit" className={poststyles.submitButton}>Submit Recipe</button>
+    </form>
+  </div>
+);
 };
 
 export default CreatePost;

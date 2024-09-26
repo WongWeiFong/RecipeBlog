@@ -7,6 +7,7 @@ const multer = require('multer');
 const path = require('path');
 
 const app = express();
+// const router = express.Router();
 const port = 3005;
 
 // MySQL Connection
@@ -254,6 +255,81 @@ app.put('/profile/:id', uploadProfile.single('profilePicture'), (req, res) => {
   });
 });
 
+app.post('/create-post', (req, res) => {
+  const { title, recipeTime, description, coverImage, steps } = req.body;
+
+  //Insert post into post table
+  const postQuery = 'INSERT INTO post (user_id, title, recipe,_time, description, cover_image) VALUES (?, ?, ?, ?, ?)';
+
+  const userId = req.session.userId;
+
+  connection.query(postQuery, [userId, title, recipeTime, description, coverImage], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    const postId = result.insertId;
+
+    //Insert steps into recipe_steps table
+    if (steps && steps.length > 0){
+      const stepQuery = `INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES ?`;
+
+      // Prepare step data in the form [[postId, stepNumber, stepText], ...]
+      const stepData = steps.map((step, index) => [postId, index + 1, step]);
+
+      connection.query(stepQuery, [stepData], (err, result) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        return res.status(200).json({ message: 'Post created successfully' });
+      });
+    } else {
+      // No steps provided
+      return res.status(200).json({ message: 'Post created without steps' });
+    }
+  })
+})
+
+app.get('/get-post/:id', (req, res) => {
+  const postId = req.params.id;
+
+  //Fetch post with steps (join for 2 table (foreign key))
+  const query = `
+    SELECT p.*, s.step_number, s.step_text 
+    FROM post p 
+    LEFT JOIN recipe_steps s ON p.post_id = s.post_id
+    WHERE p.post_id = ?
+    ORDER BY s.step_number;
+  `;
+
+  connection.query(query, [postId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (results.length > 0) {
+      // The first row contains the post details, and the subsequent rows contain steps
+      const post = {
+        post_id: results[0].post_id,
+        title: results[0].title,
+        recipe_time: results[0].recipe_time,
+        description: results[0].description,
+        cover_image: results[0].cover_image,
+        steps: results.map(row => ({
+          step_number: row.step_number,
+          step_text: row.step_text
+        }))
+      };
+      
+      return res.status(200).json(post);
+    } else {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+  });
+})
+
+/*
 // Route for creating a post
 app.put('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'pictures', maxCount: 10 }]), (req, res) => {
   try{
@@ -284,6 +360,8 @@ app.get('/create-post', (req, res) => {
   res.json(req.session.userId);
 })
 
+
+
 // Route to get post details by post ID
 app.get('/post/:id', (req, res) => {
   const postId = req.params.id;
@@ -308,7 +386,7 @@ app.get('/post/:id', (req, res) => {
   });
 });
 
-
+*/
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
