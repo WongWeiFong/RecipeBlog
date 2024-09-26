@@ -284,6 +284,31 @@ app.get('/create-post', (req, res) => {
   res.json(req.session.userId);
 })
 
+// Route to get post details by post ID
+app.get('/post/:id', (req, res) => {
+  const postId = req.params.id;
+
+  const sql = 'SELECT post.title, post.recipe_time, post.description, post.cover_image, post.pictures, post.post_date, user_acc.name FROM post JOIN user_acc ON post.user_id = user_acc.user_id WHERE post.post_id = ?';
+  
+  db.query(sql, [postId], (err, result) => {
+    if (err) {
+      console.error('Error fetching post details:', err);
+      return res.status(500).json({ error: 'Error fetching post details' });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Return the post details
+    const post = result[0];
+    post.pictures = JSON.parse(post.pictures); // Parse the pictures from JSON
+
+    res.json(post);
+  });
+});
+
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

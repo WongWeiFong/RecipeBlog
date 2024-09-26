@@ -7,6 +7,7 @@ import Contact from "./pages/Contact";
 import Profile from "./pages/Profile";
 import SignInUp from "./pages/SignInUp";
 import CreatePost from "./pages/CreatePost";
+import PostDetails from "./pages/PostDetails";
 
 const App = () => {
   return (
@@ -22,6 +23,7 @@ const App = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/signinup" element={<SignInUp />} />
         <Route path="/createpost" element={<CreatePost/>} />
+        <Route path="/post/:id" element={<PostDetails/>} />
       </Routes>
     </BrowserRouter>
   );

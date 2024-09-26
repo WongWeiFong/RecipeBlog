@@ -67,6 +67,7 @@ const CreatePost = () => {
       .then((response) => response.json())
       .then((data) => {
         alert('Post created successfully!');
+        navigate('/explore');
       })
       .catch((error) => {
         console.error('Error creating post:', error);
