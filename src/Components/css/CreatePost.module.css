@@ -45,11 +45,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 300px;
-  height: 300px;
+  width: 200px;
+  height: 200px;
   border: 1px dashed #ccc;
+  padding: 10px;
   margin-top: 10px;
   overflow: hidden;
+  cursor: pointer; /* Changes cursor to indicate clickable area */
+  margin-bottom: 10px; /* Space between sections */
 }
 
 .coverPreview {
@@ -78,6 +81,48 @@
   margin-right: 10px;
 }
 
+.pictureContainer {
+  position: relative;
+  display: inline-block;
+  margin: 5px;
+}
+
+.picturePreview {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.pictureActions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 5px;
+}
+
+.removePictureButton, .reuploadPictureButton {
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+}
+
+.removePictureButton i, .reuploadPictureButton i {
+  color: white;
+}
+
+.actionIcon {
+  width: 20px; /* Adjust the size to fit your design */
+  height: 20px;
+}
+
+.picturesPreviewContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 
 .stepsContainer {
   margin-top: 20px;

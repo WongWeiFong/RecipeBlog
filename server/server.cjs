@@ -254,8 +254,8 @@ app.put('/profile/:id', uploadProfile.single('profilePicture'), (req, res) => {
     }
   });
 });
-
-app.post('/create-post', uploadPost.single('coverImage'), (req, res) => {
+app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'pictures', maxCount: 10 }]),  (req, res) => {
+// app.post('/create-post', uploadPost.single('coverImage'), (req, res) => {
 // app.put('/create-post', (req, res) => {
   try {
     const userId = req.session.userId; // Get the user ID from the session
@@ -265,6 +265,7 @@ app.post('/create-post', uploadPost.single('coverImage'), (req, res) => {
 
     const { title, recipeTime, description } = req.body;
     const coverImage = req.file ? req.file.filename : null; // Handle cover image upload
+    const additionalPictures = req.files['pictures'] ? req.files['pictures'].map(file => file.filename) : []; // Handle additional pictures
     const steps = req.body.steps; // Steps will come as an array
 
     if (!title || !recipeTime || !description || !coverImage) {
@@ -272,8 +273,8 @@ app.post('/create-post', uploadPost.single('coverImage'), (req, res) => {
     }
 
     // Insert post into post table
-    const postQuery = 'INSERT INTO post (user_id, title, post_date, recipe_time, cover_image, description) VALUES (?, ?, NOW(), ?, ?, ?)';
-    db.query(postQuery, [userId, title, recipeTime, coverImage, description], (err, result) => {
+    const postQuery = 'INSERT INTO post (user_id, title, post_date, recipe_time, cover_image, description, pictures) VALUES (?, ?, NOW(), ?, ?, ?, ?)';
+    db.query(postQuery, [userId, title, recipeTime, coverImage, description, JSON.stringify(additionalPictures)], (err, result) => {
       if (err) {
         console.error('Error saving post to database:', err);
         return res.status(500).json({ error: 'Error saving post to database' });
@@ -283,7 +284,6 @@ app.post('/create-post', uploadPost.single('coverImage'), (req, res) => {
 
       if (steps) {
         const stepQuery = 'INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES ?';
-
         const stepData = steps.map((step, index) => [postId, index + 1, step]);
 
         db.query(stepQuery, [stepData], (err, result) => {
