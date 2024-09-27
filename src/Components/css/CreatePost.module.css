@@ -142,12 +142,30 @@
   align-items: center;
 }
 
+.btnContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .submitButton {
+  width: 200px;
   background-color: #f39c12;
   color: white;
+  margin: 10px;
   padding: 15px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  width: 100%;
+}
+
+.cancelButton {
+  width: 200px;
+  background-color: #d32f2f;
+  color: white;
+  margin: 10px;
+  padding: 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }

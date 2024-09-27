@@ -70,35 +70,39 @@ const CreatePost = () => {
     setSteps(newSteps);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const formData = {
-      title,
-      recipeTime: `${recipeTime} ${timeUnit}`,
-      description, // Include description in form data
-      coverImage, // You may need to convert this to a URL or handle file uploads separately
-      steps, // This is an array of steps
-    };
+    const formData = new FormData();
+  formData.append('title', title);
+  formData.append('recipeTime', `${recipeTime} ${timeUnit}`);
+  formData.append('description', description);
+  formData.append('coverImage', coverImage);  // File upload (cover image)
 
-    fetch('http://localhost:3005/create-post', {
+  steps.forEach((step, index) => {
+    formData.append(`steps[${index}]`, step);  // Each step as part of form data
+  });
+
+  try{
+    const response = await fetch('http://localhost:3005/create-post', {
       method: 'POST',
       body: formData,
       credentials: 'include'
-      // headers: {
-      //   'Content-Type': 'application/json',
-      // },
-      // body: JSON.stringify(formData),
     })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.message === 'Post created successfully') {
-          alert('Recipe created!');
-          nagivate("/explore");
-          // Redirect or reset form
-        }
-      })
-      .catch((error) => console.error('Error:', error));
+      if (response.status === 201) {
+        alert('Recipe created!');
+        navigate('/explore');
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 200) {
+        alert('Every step must have description.'); // Display appropriate error message
+      } else if (error.response && error.response.status === 500) {
+      //   alert('Error saving steps.');
+      // } else {
+        alert('Error during creating recipe. Please check console for details.');
+        console.error('Error during creating recipe: ', error);
+      }
+    }
   };
   
 /*
@@ -185,7 +189,8 @@ return (
             <label htmlFor={`step-${index + 1}`}>Step {index + 1}</label>
             <textarea id={`step-${index + 1}`} value={step} onChange={(e) => handleStepChange(index, e.target.value)} 
             onInput={handleAutoResize}
-            rows="4" />
+            rows="4" 
+            required/>
             <button type="button" onClick={() => removeStep(index)} 
             className={poststyles.removeStepButton}
             disabled={steps.length === 1}>
@@ -202,7 +207,10 @@ return (
       <br/>
 
       {/* Submit Button */}
-      <button type="submit" className={poststyles.submitButton}>Submit Recipe</button>
+      <div className={poststyles.btnContainer}>
+        <button type="submit" className={poststyles.submitButton}>Submit Recipe</button>
+        <button type="cancel" className={poststyles.cancelButton}>Cancel</button>
+      </div>
     </form>
   </div>
 );

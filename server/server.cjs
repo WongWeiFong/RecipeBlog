@@ -255,40 +255,56 @@ app.put('/profile/:id', uploadProfile.single('profilePicture'), (req, res) => {
   });
 });
 
-app.post('/create-post', (req, res) => {
-  const { title, recipeTime, description, coverImage, steps } = req.body;
-
-  //Insert post into post table
-  const postQuery = 'INSERT INTO post (user_id, title, recipe,_time, description, cover_image) VALUES (?, ?, ?, ?, ?)';
-
-  const userId = req.session.userId;
-
-  connection.query(postQuery, [userId, title, recipeTime, description, coverImage], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
+app.post('/create-post', uploadPost.single('coverImage'), (req, res) => {
+// app.put('/create-post', (req, res) => {
+  try {
+    const userId = req.session.userId; // Get the user ID from the session
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const postId = result.insertId;
+    const { title, recipeTime, description } = req.body;
+    const coverImage = req.file ? req.file.filename : null; // Handle cover image upload
+    const steps = req.body.steps; // Steps will come as an array
 
-    //Insert steps into recipe_steps table
-    if (steps && steps.length > 0){
-      const stepQuery = `INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES ?`;
-
-      // Prepare step data in the form [[postId, stepNumber, stepText], ...]
-      const stepData = steps.map((step, index) => [postId, index + 1, step]);
-
-      connection.query(stepQuery, [stepData], (err, result) => {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-
-        return res.status(200).json({ message: 'Post created successfully' });
-      });
-    } else {
-      // No steps provided
-      return res.status(200).json({ message: 'Post created without steps' });
+    if (!title || !recipeTime || !description || !coverImage) {
+      return res.status(400).json({ error: 'All fields are required' });
     }
-  })
+
+    // Insert post into post table
+    const postQuery = 'INSERT INTO post (user_id, title, post_date, recipe_time, cover_image, description) VALUES (?, ?, NOW(), ?, ?, ?)';
+    db.query(postQuery, [userId, title, recipeTime, coverImage, description], (err, result) => {
+      if (err) {
+        console.error('Error saving post to database:', err);
+        return res.status(500).json({ error: 'Error saving post to database' });
+      }
+
+      const postId = result.insertId; // Get the ID of the newly inserted post
+
+      if (steps) {
+        const stepQuery = 'INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES ?';
+
+        const stepData = steps.map((step, index) => [postId, index + 1, step]);
+
+        db.query(stepQuery, [stepData], (err, result) => {
+          if (err) {
+            console.error('Error saving steps:', err);
+            return res.status(500).json({ error: 'Error saving steps' });
+          }
+          return res.status(201).json({ message: 'Post created successfully with steps' });
+        });
+      } else {
+        res.status(200).json({ message: 'No steps?!?' });
+      }
+    });
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/create-post', (req, res) => {
+  res.json(req.session.userId);
 })
 
 app.get('/get-post/:id', (req, res) => {
