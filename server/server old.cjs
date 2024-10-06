@@ -45,6 +45,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// app.use(cors({
+//   origin: "http://localhost:5173",  // Update with your frontend URL
+//   credentials: true  // Allow credentials (cookies) to be sent
+// }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Setup for multer to handle file uploads
@@ -64,16 +68,15 @@ const postStorage = multer.diskStorage({
     cb(null, 'uploads/post-images/');
   },
   filename: (req, file, cb) => {
-    cb(null, file.originalname);
+    cb(null, Date.now() + path.extname(file.originalname));
   }
 });
 
 const uploadProfile = multer({ storage: profileStorage });
-const uploadPost = multer({ storage: postStorage });
-// .fields([
-//   { name: 'coverImage', maxCount: 1},
-//   { name: 'pictures', maxCount: 10}
-// ]);
+const uploadPost = multer({ storage: postStorage }).fields([
+  {name: 'coverImage', maxCount: 1},
+  {name: 'pictures[]', maxCount: 10}
+]);
 
 app.use(express.json());
 
@@ -255,80 +258,167 @@ app.put('/profile/:id', uploadProfile.single('profilePicture'), (req, res) => {
   });
 });
 
-app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'pictures', maxCount: 10 }]), async (req, res) => {
-// app.post('/create-post', uploadPost.fields({ name: 'coverImage', maxCount: 1 }), (req, res) => {
-// app.post('/create-post', (req, res) => {
+// // Route to handle post creation
+// app.post('/create-post', uploadPost.fields([{ name: 'coverImage' , maxCount: 1}, { name: 'pictures' }]), async (req, res) => {
+//   const { title, recipeTime, description, steps } = req.body;
+//   const userId = req.session.userId; // Assuming you have session-based auth
 
-  // uploadPost(req, res, function(err){
-  //   if (err instanceof multer.MulterError) {
-  //     return res.status(400).json({error: "errorrrrrr"});
-  //   } else if (err){
-  //     return res.status(500).json({error: "server errrror"});
-  //   }
-  // })
-  
-    const userId = req.session.userId; // Get the user ID from the session
-    if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
+//   console.log('Post data:', { title, recipeTime, description, userId, steps });
+
+
+//   // Save the post details in the database
+//   connection.query(
+//     'INSERT INTO post (userId, title, recipeTime, description, coverImage) VALUES (?, ?, ?, ?, ?)',
+//     [userId, title, recipeTime, description, req.files?.coverImage ? req.files.coverImage[0].filename : null],
+//     (err, results) => {
+//       if (err) {
+//         console.error(err);
+//         return res.status(500).json({ error: 'Failed to save post' });
+//       }
+
+//       const postId = results.insertId;
+
+//       // Insert steps into a separate table
+//       steps.forEach((step, index) => {
+//         connection.query(
+//           'INSERT INTO post_steps (postId, stepNumber, stepDescription) VALUES (?, ?, ?)',
+//           [postId, index + 1, step],
+//           (stepErr) => {
+//             if (stepErr) {
+//               console.error(stepErr);
+//               return res.status(500).json({ error: 'Failed to save steps' });
+//             }
+//           }
+//         );
+//       });
+
+//       // Handle additional pictures (if any)
+//       if (req.files.pictures) {
+//         req.files.pictures.forEach((file) => {
+//           connection.query(
+//             'INSERT INTO post_pictures (postId, pictureFilename) VALUES (?, ?)',
+//             [postId, file.filename],
+//             (pictureErr) => {
+//               if (pictureErr) {
+//                 console.error(pictureErr);
+//                 return res.status(500).json({ error: 'Failed to save pictures' });
+//               }
+//             }
+//           );
+//         });
+//       }
+
+//       return res.status(201).json({ message: 'Post created successfully' });
+//     }
+//   );
+// });
+
+// Route to handle post creation
+app.post('/create-post', uploadPost, async (req, res) => {
+  const { title, recipeTime, description, steps } = req.body;
+  const userId = req.session.userId; // Assuming user is authenticated and session contains userId
+
+  // const coverImage = req.files['coverImage'] ? req.files.coverImage[0].filename : null
+  const coverImage = req.files.coverImage ? req.files.coverImage[0].filename : null; // Get the uploaded cover image file name
+  const pictures = req.files['pictures[]'] ? req.files['pictures[]'].map(file => file.filename) : [];
+
+  console.log('Files received: ', req.files);
+
+  // Insert into the `post` table
+  // const postQuery = `INSERT INTO post (user_id, title, recipe_time, description, cover_image) 
+  //                     VALUES (?, ?, ?, ?, ?)`;
+
+  // const connection = await createPool.getConnection();
+  try {
+    // await db.beginTransaction();
+
+    // const [result] = await db.execute(postQuery, [userId, title, recipeTime, description, coverImage]);
+    const [result] = await db.query(
+      `INSERT INTO post (user_id, title, recipe_time, description, cover_image, post_date) VALUES (?, ?, ?, ?, ?, NOW())`,
+      [userId, title, recipeTime, description, coverImage]
+    );
+    
+    const postId = result.insertId;
+
+    // Insert steps into `recipe_steps`
+    if (steps && steps.length > 0) {
+      const stepQueries = steps.map((step, index) => {
+        return db.query(
+          'INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES (?, ?, ?)',
+          [postId, index + 1, step]
+        );
+      });
+      await Promise.all(stepQueries); // Execute all step insert queries
     }
 
-    const { title, recipeTime, description } = req.body;
-    const coverImage = req.file ? req.file.filename : null; // Handle cover image upload
-    const steps = req.body.steps; // Steps will come as an array
-    const pictures = req.files.pictures ? req.files.pictures.map(file => file.filename) : []
-    // const pictures = req.body.pictures;
-
-    if (!title) {
-      return res.status(400).json({ error: 'No title?' });
-    } else if (!recipeTime) {
-      return res.status(400).json({ error: 'no time?' });
-    } else if (!description) {
-      return res.status(400).json({ error: 'no description?' });
-    } else if (!!coverImage) {
-      return res.status(400).json({ error: 'no cover image?' });
+    // Insert pictures into `recipe_pictures`
+    if (pictures && pictures.length > 0) {
+      const pictureQueries = pictures.map(picture => {
+        return db.query(
+          'INSERT INTO recipe_pictures (post_id, picture) VALUES (?, ?)',
+          [postId, picture]
+        );
+      });
+      await Promise.all(pictureQueries); // Execute all picture insert queries
     }
 
-    // Insert post into post table
-    const postQuery = 'INSERT INTO post (user_id, title, post_date, recipe_time, cover_image, description) VALUES (?, ?, NOW(), ?, ?, ?)';
-    db.query(postQuery, [userId, title, recipeTime, coverImage, description], (err, result) => {
-      if (err) {
-        console.error('Error saving post to database:', err);
-        return res.status(500).json({ error: 'Error saving post to database' });
-      }
-
-      const postId = result.insertId; // Get the ID of the newly inserted post
-
-      if (steps && steps.length > 0) {
-        const stepQuery = 'INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES ?';
-        const stepData = steps.map((step, index) => [postId, index + 1, step]);
-
-        db.query(stepQuery, [stepData], (err) => {
-          if (err) {
-            console.error('Error saving steps:', err);
-            return res.status(500).json({ error: 'Error saving steps' });
-          }
-          return res.status(201).json({ message: 'Post created successfully with steps' });
-        });
-      } else {
-        res.status(200).json({ message: 'No steps?!?' });
-      }
-
-      if (pictures && pictures.length > 0) {
-        const picQuery = 'INSERT INTO recipe_pictures (post_id, picture) VALUES ?';
-        const picData = pictures.map((picture) => [postId, picture]);
-
-        db.query(picQuery, [picData], (err) => {
-          if(err) {
-            console.error('Error saving pictures:', err);
-            return res.status(500).json({ error: 'Error saving pictures' });
-          }
-          return res.status(201).json({ message: 'Post created successfully with pictures'});
-        });
-      } else {
-        res.status(200).json({ message: 'No pictures?!?' });
-      }
-    });
+    res.status(201).send('Post created successfully!');
+  } catch (error) {
+    console.error('Error creating post:', error);
+    res.status(500).send('Error creating post');
+  }
 });
+
+
+
+// app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'pictures', maxCount: 10 }]),  (req, res) => {
+// // app.post('/create-post', uploadPost.single('coverImage'), (req, res) => {
+// // app.put('/create-post', (req, res) => {
+//   try {
+//     const userId = req.session.userId; // Get the user ID from the session
+//     if (!userId) {
+//       return res.status(401).json({ error: 'User not authenticated' });
+//     }
+
+//     const { title, recipeTime, description } = req.body;
+//     const coverImage = req.file ? req.file.filename : null; // Handle cover image upload
+//     const additionalPictures = req.files['pictures'] ? req.files['pictures'].map(file => file.filename) : []; // Handle additional pictures
+//     const steps = req.body.steps; // Steps will come as an array
+
+//     if (!title || !recipeTime || !description || !coverImage) {
+//       return res.status(400).json({ error: 'All fields are required' });
+//     }
+
+//     // Insert post into post table
+//     const postQuery = 'INSERT INTO post (user_id, title, post_date, recipe_time, cover_image, description, pictures) VALUES (?, ?, NOW(), ?, ?, ?, ?)';
+//     db.query(postQuery, [userId, title, recipeTime, coverImage, description, JSON.stringify(additionalPictures)], (err, result) => {
+//       if (err) {
+//         console.error('Error saving post to database:', err);
+//         return res.status(500).json({ error: 'Error saving post to database' });
+//       }
+
+//       const postId = result.insertId; // Get the ID of the newly inserted post
+
+//       if (steps) {
+//         const stepQuery = 'INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES ?';
+//         const stepData = steps.map((step, index) => [postId, index + 1, step]);
+
+//         db.query(stepQuery, [stepData], (err, result) => {
+//           if (err) {
+//             console.error('Error saving steps:', err);
+//             return res.status(500).json({ error: 'Error saving steps' });
+//           }
+//           return res.status(201).json({ message: 'Post created successfully with steps' });
+//         });
+//       } else {
+//         res.status(200).json({ message: 'No steps?!?' });
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Unexpected error:', error);
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
 
 app.get('/create-post', (req, res) => {
   res.json(req.session.userId);
@@ -346,7 +436,7 @@ app.get('/get-post/:id', (req, res) => {
     ORDER BY s.step_number;
   `;
 
-  connection.query(query, [postId], (err, results) => {
+  db.query(query, [postId], (err, results) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }

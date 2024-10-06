@@ -14,6 +14,7 @@ const CreatePost = () => {
   const [coverImage, setCoverImage] = useState(null);
   const [pictures, setPictures] =useState([]);
   const [steps, setSteps] = useState(['']); // For handling multiple steps
+  // const [preview, setPreview] = useState(null); //preview for cover image
   const [coverPreview, setCoverPreview] = useState(null);
   const [picturesPreview, setPicturesPreview] = useState([]);
 
@@ -44,6 +45,12 @@ const CreatePost = () => {
     checkAuth();  // Check authentication on component mount
   }, []);
 
+  // useEffect(() => {
+  //   return () => {
+  //     pictures.forEach(picture => URL.revokeObjectURL(picture.preview));
+  //   };
+  // }, [pictures]);
+  
   useEffect(() => {
     return () => {
       URL.revokeObjectURL(coverPreview);
@@ -81,12 +88,28 @@ const CreatePost = () => {
     setSteps(newSteps);
   };
 
+  // const handlePicturesChange = (e) => {
+  //   const files = Array.from(e.target.files); // Handle multiple file upload
+  //   const newPreviews = files.map(file => URL.createObjectURL(file));
+  //   setPictures([...pictures, ...files]);
+  //   setPreview([...preview, ...newPreviews]);
+  // };
+
   const handlePicturesChange = (e) => {
     const files = Array.from(e.target.files); // Handle multiple file upload
     const previews = files.map(file => URL.createObjectURL(file));
     setPictures([...pictures, ...files]);
     setPicturesPreview([...picturesPreview, ...previews]);
   };
+
+  // const handleRemovePicture = (index) => {
+  //   const updatedPictures = [...pictures];
+  //   updatedPictures.splice(index, 1);
+  //   setPictures(updatedPictures);
+  //   const updatedPreviews = [...preview];
+  //   updatedPreviews.splice(index, 1);
+  //   setPreview(updatedPreviews);
+  // };
 
   const handleRemovePicture = (index) => {
     const updatedPictures = [...pictures];
@@ -101,13 +124,13 @@ const CreatePost = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-  const formData = new FormData();
+    const formData = new FormData();
   formData.append('title', title);
   formData.append('recipeTime', `${recipeTime} ${timeUnit}`);
   formData.append('description', description);
   formData.append('coverImage', coverImage);  // File upload (cover image)
+  pictures.forEach(pic => {formData.append('pictures[]', pic)});
   steps.forEach((step, index) => {formData.append(`steps[${index}]`, step)});  // Each step as part of form data
-  pictures.forEach((picture, index) => {formData.append(`pictures`, picture)});
 
   try{
     const response = await fetch('http://localhost:3005/create-post', {
@@ -115,13 +138,6 @@ const CreatePost = () => {
       body: formData,
       credentials: 'include'
     })
-    const data = await response.json();
-    if (response.ok) {
-      console.log('Post created successfully:', data);
-    } else {
-      console.error('Error creating post:', data);
-    }
-
       if (response.status === 201) {
         alert('Recipe created!');
         navigate('/explore');
@@ -174,23 +190,23 @@ return (
 
       {/* Recipe Time */}
       <div className={poststyles.formGroup}>
-          <label htmlFor="recipeTime">Cooking Time</label>
-          <div className={poststyles.timeInputContainer}>
-            <input type="number" id="recipeTime" value={recipeTime} onChange={(e) => setRecipeTime(e.target.value)} min="1" required />
-            <select value={timeUnit} onChange={(e) => setTimeUnit(e.target.value)}>
-              <option value="minutes">Minutes</option>
-              <option value="hours">Hours</option>
-              <option value="days">Days</option>
-            </select>
-          </div>
+        <label htmlFor="recipeTime">Cooking Time</label>
+        <div className={poststyles.timeInputContainer}>
+          <input type="number" id="recipeTime" value={recipeTime} onChange={(e) => setRecipeTime(e.target.value)} min="1" required />
+          <select value={timeUnit} onChange={(e) => setTimeUnit(e.target.value)}>
+            <option value="minutes">Minutes</option>
+            <option value="hours">Hours</option>
+            <option value="days">Days</option>
+          </select>
         </div>
+      </div>
 
       {/* Steps */}
       <div className={poststyles.stepsContainer}>
         <h3>Steps</h3>
         {steps.map((step, index) => (
           <div key={index} className={poststyles.stepGroup}>
-            <label htmlFor={`step-${index + 1}`}>Steps {index + 1}</label>
+            <label htmlFor={`step-${index + 1}`}>Step {index + 1}</label>
             <textarea id={`step-${index + 1}`} value={step} onChange={(e) => handleStepChange(index, e.target.value)} 
             onInput={handleAutoResize}
             rows="4" 
