@@ -272,21 +272,29 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    console.log('Files received:', req.files); // Log to check if files are received
+
+
     const { title, recipeTime, description } = req.body;
-    const coverImage = req.file ? req.file.filename : null; // Handle cover image upload
+    // const coverImage = req.file ? req.file.filename : null; // Handle cover image upload
+    const coverImage = req.files.coverImage ? req.files.coverImage.map(file => file.filename) : null;
     const steps = req.body.steps; // Steps will come as an array
     const pictures = req.files.pictures ? req.files.pictures.map(file => file.filename) : []
     // const pictures = req.body.pictures;
-
+    
     if (!title) {
       return res.status(400).json({ error: 'No title?' });
     } else if (!recipeTime) {
       return res.status(400).json({ error: 'no time?' });
     } else if (!description) {
       return res.status(400).json({ error: 'no description?' });
-    } else if (!!coverImage) {
+    } else if (!coverImage) {
       return res.status(400).json({ error: 'no cover image?' });
     }
+
+    // if (!title || !recipeTime || !description || !coverImage) {
+    //   return res.status(400).json({ error: 'Missing required fields' });
+    // }
 
     // Insert post into post table
     const postQuery = 'INSERT INTO post (user_id, title, post_date, recipe_time, cover_image, description) VALUES (?, ?, NOW(), ?, ?, ?)';
@@ -298,6 +306,7 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
 
       const postId = result.insertId; // Get the ID of the newly inserted post
 
+      const stepPromise = new Promise((resolve, reject) => {
       if (steps && steps.length > 0) {
         const stepQuery = 'INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES ?';
         const stepData = steps.map((step, index) => [postId, index + 1, step]);
@@ -305,14 +314,19 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
         db.query(stepQuery, [stepData], (err) => {
           if (err) {
             console.error('Error saving steps:', err);
-            return res.status(500).json({ error: 'Error saving steps' });
+            return reject('Error saving steps');
+            //return res.status(500).json({ error: 'Error saving steps' });
           }
-          return res.status(201).json({ message: 'Post created successfully with steps' });
+          resolve();
+          // return res.status(201).json({ message: 'Post created successfully with steps' });
         });
       } else {
-        res.status(200).json({ message: 'No steps?!?' });
+        resolve(); //No steps to insert
+        // res.status(200).json({ message: 'No steps?!?' });
       }
+    });
 
+    const picturePromise = new Promise((resolve, reject) => {
       if (pictures && pictures.length > 0) {
         const picQuery = 'INSERT INTO recipe_pictures (post_id, picture) VALUES ?';
         const picData = pictures.map((picture) => [postId, picture]);
@@ -320,13 +334,24 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
         db.query(picQuery, [picData], (err) => {
           if(err) {
             console.error('Error saving pictures:', err);
-            return res.status(500).json({ error: 'Error saving pictures' });
+            return reject('Error saving pictures');
+            // return res.status(500).json({ error: 'Error saving pictures' });
           }
-          return res.status(201).json({ message: 'Post created successfully with pictures'});
+          resolve();
         });
       } else {
-        res.status(200).json({ message: 'No pictures?!?' });
+        resolve();
+        // res.status(200).json({ message: 'No pictures?!?' });
       }
+    });
+    // Wait for both steps and pictures to complete
+    Promise.all([stepPromise, picturePromise])
+    .then(() => {
+      res.status(201).json({ message: 'Post created successfully with steps and pictures' });
+    })
+    .catch((error) => {
+      res.status(500).json({ error });
+    });
     });
 });
 

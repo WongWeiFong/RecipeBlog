@@ -107,7 +107,7 @@ const CreatePost = () => {
   formData.append('description', description);
   formData.append('coverImage', coverImage);  // File upload (cover image)
   steps.forEach((step, index) => {formData.append(`steps[${index}]`, step)});  // Each step as part of form data
-  pictures.forEach((picture, index) => {formData.append(`pictures`, picture)});
+  pictures.forEach((picture) => {formData.append(`pictures`, picture)});
 
   try{
     const response = await fetch('http://localhost:3005/create-post', {
