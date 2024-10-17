@@ -355,6 +355,21 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
     });
 });
 
+// Inside server.cjs or appropriate route handler
+app.get('/posts', (req, res) => {
+  const query = 'SELECT title, cover_image, post_date FROM post ORDER BY post_date DESC';
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching posts:', err);
+      return res.status(500).json({ error: 'Error fetching posts' });
+    }
+
+    res.status(200).json(results); // Send the results to the front-end
+  });
+});
+
+
 app.get('/create-post', (req, res) => {
   res.json(req.session.userId);
 })

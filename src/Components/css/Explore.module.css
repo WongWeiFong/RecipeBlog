@@ -1,0 +1,63 @@
+/* Explore.module.css */
+.exploreContainer {
+    padding: 20px;
+    margin-top: 10%;
+  }
+  
+  .postsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .postCard {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    height: 350px;
+    display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Ensure that content is spaced */
+  }
+  
+  .coverImage {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+  }
+  
+  .exploreContainer h3 {
+    word-wrap: break-word; /* Ensure the title doesn't overflow */
+  text-overflow: ellipsis; /* Add ellipsis for long text */
+  overflow: hidden; /* Hide overflow text */
+  }
+
+  /*
+  .exploreContainer p {
+    padding: 0 10px 10px;
+    color: #777;
+    margin-top: auto; 
+  }
+  */
+
+
+  
+  .postInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px 10px;
+    font-size: 14px;
+  }
+  
+  .userName {
+    color: #555;
+    font-weight: bold;
+  }
+  
+  .postDate {
+    color: #777;
+    text-align: right;
+  }
