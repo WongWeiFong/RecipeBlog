@@ -259,14 +259,6 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
 // app.post('/create-post', uploadPost.fields({ name: 'coverImage', maxCount: 1 }), (req, res) => {
 // app.post('/create-post', (req, res) => {
 
-  // uploadPost(req, res, function(err){
-  //   if (err instanceof multer.MulterError) {
-  //     return res.status(400).json({error: "errorrrrrr"});
-  //   } else if (err){
-  //     return res.status(500).json({error: "server errrror"});
-  //   }
-  // })
-  
     const userId = req.session.userId; // Get the user ID from the session
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -287,7 +279,7 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
     } else if (!recipeTime) {
       return res.status(400).json({ error: 'no time?' });
     } else if (!description) {
-      return res.status(400).json({ error: 'no description?' });
+          return res.status(400).json({ error: 'no description?' });
     } else if (!coverImage) {
       return res.status(400).json({ error: 'no cover image?' });
     }
@@ -357,7 +349,7 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
 
 // Inside server.cjs or appropriate route handler
 app.get('/posts', (req, res) => {
-  const query = 'SELECT title, cover_image, post_date FROM post ORDER BY post_date DESC';
+  const query = 'SELECT title, cover_image, post_date FROM post ORDER BY post_date DESC'; // Query to fetch posts
   
   db.query(query, (err, results) => {
     if (err) {
@@ -369,11 +361,48 @@ app.get('/posts', (req, res) => {
   });
 });
 
-
 app.get('/create-post', (req, res) => {
   res.json(req.session.userId);
 })
 
+app.get('/post/:id', async (req, res) => {
+  const postId = req.params.id;
+
+  try {
+      const [post] = await db.promise().query('SELECT * FROM post WHERE post_id = ?', [postId]);
+      const [steps] = await db.promise().query('SELECT * FROM recipe_steps WHERE post_id = ? ORDER BY step_number', [postId]);
+      const [pictures] = await db.promise().query('SELECT * FROM recipe_pictures WHERE post_id = ?', [postId]);
+
+      if (post.length === 0) {
+          return res.status(404).json({ error: 'Post not found' });
+      }
+
+      res.json({
+          post: post[0],
+          steps,
+          pictures
+      });
+  } catch (err) {
+      res.status(500).json({ error: 'Error retrieving post data' });
+  }
+});
+
+app.get('/explore-posts', (req, res) => {
+  const sqlQuery = `SELECT post_id, user_id, title, cover_image, post_date FROM post ORDER BY post_date DESC`; // Ensure post_id is included
+  
+  db.query(sqlQuery, (err, result) => {
+    if (err) {
+      console.error('Error fetching posts:', err);
+      res.status(500).send('Error fetching posts');
+    } else {
+      console.log(result); // Log the result to confirm post_id is being sent
+      res.json(result); // Send the result to the frontend
+    }
+  });
+});
+
+
+/*
 app.get('/get-post/:id', (req, res) => {
   const postId = req.params.id;
 
@@ -411,7 +440,7 @@ app.get('/get-post/:id', (req, res) => {
     }
   });
 })
-
+*/
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
