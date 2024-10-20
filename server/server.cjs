@@ -365,6 +365,72 @@ app.get('/create-post', (req, res) => {
   res.json(req.session.userId);
 })
 
+// In your server.cjs or appropriate route file
+app.get('/post/:id', async (req, res) => {
+  const postId = req.params.id;
+  console.log(`Fetching post details for post_id11: ${postId}`); // Log post ID
+
+  // Query to fetch post details, pictures, steps, and user info
+  const query = `
+    SELECT 
+      p.post_id, p.title, p.recipe_time, p.description, p.cover_image, p.post_date, u.user_id, u.name,
+      r.picture_id, r.picture,
+      s.step_id, s.step_number, s.step_text
+    FROM post p
+    JOIN user_acc u ON p.user_id = u.user_id
+    LEFT JOIN recipe_pictures r ON p.post_id = r.post_id
+    LEFT JOIN recipe_steps s ON p.post_id = s.post_id
+    WHERE p.post_id = ?`;
+
+    db.query(query, [postId], (error, rows) => {
+      if (error) {
+        console.error('Error fetching post details:', error);
+        return res.status(500).json({ message: 'Error fetching post details', error });
+      }
+
+    if (rows.length === 0) {
+      console.error(`Post not found for post_id11: ${postId}`);
+      return res.status(404).json({ message: 'Post not found111' });
+    }
+
+    // Organize the data for pictures and steps
+    const post = {
+      post_id: rows[0].post_id,
+      title: rows[0].title,
+      recipe_time: rows[0].recipe_time,
+      description: rows[0].description,
+      cover_image: rows[0].cover_image,
+      post_date: rows[0].post_date,
+      user: {
+        user_id: rows[0].user_id,
+        name: rows[0].name,
+      },
+      pictures: [],
+      steps: [],
+    };
+
+    rows.forEach(row => {
+      if (row.picture) {
+        post.pictures.push({
+          picture_id: row.picture_id,
+          picture: row.picture
+        });
+      }
+      if (row.step_text) {
+        post.steps.push({
+          step_id: row.step_id,
+          step_number: row.step_number,
+          step_text: row.step_text
+        });
+      }
+    });
+
+    res.status(200).json(post);
+  
+  })
+});
+
+/*
 app.get('/post/:id', async (req, res) => {
   const postId = req.params.id;
 
@@ -386,6 +452,7 @@ app.get('/post/:id', async (req, res) => {
       res.status(500).json({ error: 'Error retrieving post data' });
   }
 });
+*/
 
 app.get('/explore-posts', (req, res) => {
   const sqlQuery = `SELECT post_id, user_id, title, cover_image, post_date FROM post ORDER BY post_date DESC`; // Ensure post_id is included
