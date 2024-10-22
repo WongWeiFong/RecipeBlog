@@ -81,23 +81,6 @@ function PostDetails() {
         </div>
       </div>
 
-      {/* Display Steps */}
-      <div className={postDetailsStyle.postDetails}>
-        <div className={postDetailsStyle.steps}>
-          <h2>Steps</h2>
-          {steps.length > 0 ? (
-            steps.map((step) => (
-              <div key={step.step_id} className={postDetailsStyle.step}>
-                <h3>Step {step.step_number}</h3>
-                <p>{step.step_text}</p>
-              </div>
-            ))
-          ) : (
-            <p>No steps available.</p>
-          )}
-        </div>
-      </div>
-
       {/* Display Pictures */}
       <div className={postDetailsStyle.postDetails}>
         <div className={postDetailsStyle.pictures}>
@@ -115,6 +98,23 @@ function PostDetails() {
             </div>
           ) : (
             <p>No additional pictures available.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Display Steps */}
+      <div className={postDetailsStyle.postDetails}>
+        <div className={postDetailsStyle.steps}>
+          <h2>Steps</h2>
+          {steps.length > 0 ? (
+            steps.map((step) => (
+              <div key={step.step_id} className={postDetailsStyle.step}>
+                <h3>Step {step.step_number}</h3>
+                <p>{step.step_text}</p>
+              </div>
+            ))
+          ) : (
+            <p>This recipe requires no step.</p>
           )}
         </div>
       </div>
