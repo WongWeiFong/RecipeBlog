@@ -1,6 +1,11 @@
-.postDetails {
+.postContainer {
   max-width: 800px;
   margin: 10% auto;
+}
+
+.postDetails {
+  max-width: 800px;
+  margin: 2% auto;
   padding: 20px;
   font-family: Arial, sans-serif;
   background-color: #f9f9f9;
@@ -27,8 +32,8 @@
 
 .postDetails .coverImage img {
   width: 100%;
-  height: auto;
-  max-height: 400px;
+  height: 400px;
+  /* max-height: 400px; */
   object-fit: cover;
   border-radius: 8px;
 }
@@ -56,8 +61,28 @@
 
 .postDetails .pictures img {
   width: 100%;
-  max-width: 300px;
+  max-width: 110px;
+  height: 110px;
   margin: 10px;
   border-radius: 8px;
   object-fit: cover;
+}
+
+.pictureGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-gap: 10px;
+}
+
+.recipePicture {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 8px;
+  transition: transform 0.2s;
+}
+
+.recipePicture:hover {
+  transform: scale(1.5);
+  cursor: pointer;
 }
