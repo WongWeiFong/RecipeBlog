@@ -14,7 +14,8 @@ const CreatePost = () => {
   const [ingredients, setIngredients] = useState([""]);
   const [coverImage, setCoverImage] = useState(null);
   const [pictures, setPictures] = useState([]);
-  const [steps, setSteps] = useState([{ text: "", images: [] }]);
+  const [steps, setSteps] = useState(['']); // For handling multiple steps
+  // const [steps, setSteps] = useState([{ text: "", images: [] }]);
   const [coverPreview, setCoverPreview] = useState(null);
   const [picturesPreview, setPicturesPreview] = useState([]);
 
@@ -85,60 +86,14 @@ const CreatePost = () => {
     e.target.style.height = `${e.target.scrollHeight}px`; // Set the height dynamically
   };
 
-  // const handleStepChange = (index, value) => {
-  //   const newSteps = [...steps];
-  //   newSteps[index] = value;
-  //   setSteps(newSteps);
-  // };
-
-  // Function to handle step text change
-  const handleStepTextChange = (index, value) => {
-    const updatedSteps = [...steps];
-    updatedSteps[index].text = value;
-    setSteps(updatedSteps);
-  };
-
-  // const handleAddImage = (stepIndex) => {
-  //   const updatedSteps = [...steps];
-  //   updatedSteps[stepIndex].images.push(null);
-  //   setSteps(updatedSteps);
-  // };
-
-  // const handleImageChange = (stepIndex, imageIndex, file) => {
-  //   const updatedSteps = [...steps];
-  //   updatedSteps[stepIndex].images[imageIndex] = file;
-  //   setSteps(updatedSteps);
-  // };
-
-  // const handleRemoveImage = (stepIndex, imageIndex) => {
-  //   const updatedSteps = [...steps];
-  //   updatedSteps[stepIndex].images.splice(imageIndex, 1);
-  //   setSteps(updatedSteps);
-  // };
-
-  const handleStepImageChange = (stepIndex) => {
-    const input = document.getElementById(`stepImages-${stepIndex}`);
-    input.click();
-  };
-
-  const handleStepImagesUpload = (stepIndex, e) => {
-    const files = Array.from(e.target.files);
-    const previews = files.map((file) => URL.createObjectURL(file));
-
-    const updatedSteps = [...steps];
-    updatedSteps[stepIndex].images.push(...files);
-    setSteps(updatedSteps);
-    setPicturesPreview([...picturesPreview, ...previews]);
-  };
-
-  const handleRemoveStepImage = (stepIndex, imageIndex) => {
-    const updatedSteps = [...steps];
-    updatedSteps[stepIndex].images.splice(imageIndex, 1);
-    setSteps(updatedSteps);
+  const handleStepChange = (index, value) => {
+    const newSteps = [...steps];
+    newSteps[index] = value;
+    setSteps(newSteps);
   };
 
   const addStep = () => {
-    setSteps([...steps, { text: "", images: [] }]);
+    setSteps([...steps, '' ]);
   };
 
   const removeStep = (index) => {
@@ -175,12 +130,8 @@ const CreatePost = () => {
     ingredients.forEach((ingredient, index) => {
       formData.append(`ingredients[${index}]`, ingredient);
     }); // Each ingredient as part of form data
-    steps.forEach((step, stepIndex) => {
-      formData.append(`steps[${stepIndex}]`, step.text);
-      step.images.forEach((step, imgIndex) => {
-        formData.append(`steps[${stepIndex}][images][${imgIndex}]`, step.img);
-      });
-    }); // Each step as part of form data
+
+    steps.forEach((step, index) => {formData.append(`steps[${index}]`, step)});  // Each step as part of form data    
     pictures.forEach((picture) => {
       formData.append(`pictures`, picture);
     });
@@ -336,10 +287,10 @@ const CreatePost = () => {
               </label>
               <textarea
                 id={`step-${stepIndex + 1}`}
-                value={step.text}
+                value={step}
                 // onChange={(e) => setSteps(steps.map((s, i) => i === stepIndex ? { ...s, text: e.target.value } : s ))}
                 onChange={(e) =>
-                  handleStepTextChange(stepIndex, e.target.value)
+                  handleStepChange(stepIndex, e.target.value)
                 }
                 placeholder=""
                 onInput={handleAutoResize}
@@ -356,7 +307,7 @@ const CreatePost = () => {
               </button>
 
               {/* Step Images */}
-              <div className={poststyles.picturesPreviewContainer}>
+              {/* <div className={poststyles.picturesPreviewContainer}>
                 {step.images.map((img, imageIndex) => (
                   <div key={imageIndex} className={poststyles.pictureContainer}>
                     <img
@@ -379,7 +330,6 @@ const CreatePost = () => {
                           alt="Remove"
                           className={poststyles.actionIcon}
                         />{" "}
-                        {/* Trash icon */}
                       </button>
                       <button
                         type="button"
@@ -397,7 +347,6 @@ const CreatePost = () => {
                           alt="Reupload"
                           className={poststyles.actionIcon}
                         />{" "}
-                        {/* Camera icon */}
                       </button>
                     </div>
                   </div>
@@ -427,7 +376,7 @@ const CreatePost = () => {
                   onChange={(e) => handleStepImagesUpload(stepIndex, e)}
                   style={{ display: "none" }}
                 />
-              </div>
+              </div> */}
             </div>
           ))}
           <button

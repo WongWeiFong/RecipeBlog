@@ -5,6 +5,7 @@ import postDetailsStyle from "../Components/css/PostDetails.module.css";
 function PostDetails() {
   const { id } = useParams(); // Get the post ID from the URL
   const [post, setPost] = useState(null); // State to hold post details
+  const [ingredients, setIngredients] = useState([]); // State to hold ingredients
   const [steps, setSteps] = useState([]); // State to hold steps
   const [pictures, setPictures] = useState([]); // State to hold pictures
   const [loading, setLoading] = useState(true);
@@ -22,6 +23,12 @@ function PostDetails() {
         // console.log("Original steps:", data.steps);
         // console.log("Original pictures:", data.pictures);
 
+        // Remove duplicate ingredients
+        const uniqueIngredients = data.ingredients.filter(
+          (ingredient, index, self) =>
+            index === self.findIndex((i) => i.ingredient_id === ingredient.ingredient_id)
+        );
+
         // Remove duplicate steps
         const uniqueSteps = data.steps.filter(
           (step, index, self) =>
@@ -35,6 +42,7 @@ function PostDetails() {
         );
 
         setPost(data); // Set post details
+        setIngredients(uniqueIngredients); // Set ingredients
         setSteps(uniqueSteps); // Set steps
         setPictures(uniquePictures); // Set pictures
         setLoading(false);
@@ -74,6 +82,24 @@ function PostDetails() {
         </p>
       </div>
 
+      {/* Display Ingredients */}
+      <div className={postDetailsStyle.postDetails}>
+        <div className={postDetailsStyle.ingredients}>
+          <h2>Ingredients</h2><br/>
+          {ingredients.length > 0 ? (
+            ingredients.map((ingredient) => (
+              <div key={ingredient.ingredient_id} className={postDetailsStyle.ingredient}>
+                {/* <h3></h3> */}
+                <p>{ingredient.ingredient}</p>
+              </div>
+            ))
+          ) : (
+            <p>This recipe requires no ingredient.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Display Description */}
       <div className={postDetailsStyle.postDetails}>
         <div className={postDetailsStyle.description}>
           <h2>Description</h2>

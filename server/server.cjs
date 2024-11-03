@@ -270,6 +270,7 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
     const { title, recipeTime, description } = req.body;
     // const coverImage = req.file ? req.file.filename : null; // Handle cover image upload
     const coverImage = req.files.coverImage ? req.files.coverImage.map(file => file.filename) : null;
+    const ingredients = req.body.ingredients; // Steps will come as an array
     const steps = req.body.steps; // Steps will come as an array
     const pictures = req.files.pictures ? req.files.pictures.map(file => file.filename) : []
     // const pictures = req.body.pictures;
@@ -298,7 +299,27 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
 
       const postId = result.insertId; // Get the ID of the newly inserted post
 
-      const stepPromise = new Promise((resolve, reject) => {
+      const ingredientPromise = new Promise((resolve, reject) => {
+      if (ingredients && ingredients.length > 0) {
+        const ingredientQuery = 'INSERT INTO recipe_ingredient (post_id, ingredient) VALUES ?';
+        const ingredientData = ingredients.map((ingredient) => [postId, ingredient]);
+
+        db.query(ingredientQuery, [ingredientData], (err) => {
+          if (err) {
+            console.error('Error saving ingredients:', err);
+            return reject('Error saving ingredients');
+            //return res.status(500).json({ error: 'Error saving steps' });
+          }
+          resolve();
+          // return res.status(201).json({ message: 'Post created successfully with steps' });
+        });
+      } else {
+        resolve(); //No steps to insert
+        // res.status(200).json({ message: 'No steps?!?' });
+      }
+    });
+
+    const stepPromise = new Promise((resolve, reject) => {
       if (steps && steps.length > 0) {
         const stepQuery = 'INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES ?';
         const stepData = steps.map((step, index) => [postId, index + 1, step]);
@@ -337,9 +358,9 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
       }
     });
     // Wait for both steps and pictures to complete
-    Promise.all([stepPromise, picturePromise])
+    Promise.all([ingredientPromise, stepPromise, picturePromise])
     .then(() => {
-      res.status(201).json({ message: 'Post created successfully with steps and pictures' });
+      res.status(201).json({ message: 'Post created successfully with ingredient, steps and pictures' });
     })
     .catch((error) => {
       res.status(500).json({ error });
@@ -374,11 +395,12 @@ app.get('/post/:id', async (req, res) => {
   const query = `
     SELECT 
       p.post_id, p.title, p.recipe_time, p.description, p.cover_image, p.post_date, u.user_id, u.name,
-      r.picture_id, r.picture,
+      r.picture_id, r.picture, i.ingredient_id, i.ingredient,
       s.step_id, s.step_number, s.step_text
     FROM post p
     JOIN user_acc u ON p.user_id = u.user_id
     LEFT JOIN recipe_pictures r ON p.post_id = r.post_id
+    LEFT JOIN recipe_ingredient i ON p.post_id = i.post_id
     LEFT JOIN recipe_steps s ON p.post_id = s.post_id
     WHERE p.post_id = ?`;
 
@@ -406,6 +428,7 @@ app.get('/post/:id', async (req, res) => {
         name: rows[0].name,
       },
       pictures: [],
+      ingredients: [],
       steps: [],
     };
 
@@ -414,6 +437,12 @@ app.get('/post/:id', async (req, res) => {
         post.pictures.push({
           picture_id: row.picture_id,
           picture: row.picture
+        });
+      }
+      if (row.ingredient) {
+        post.ingredients.push({
+          ingredient_id: row.ingredient_id,
+          ingredient: row.ingredient,
         });
       }
       if (row.step_text) {
