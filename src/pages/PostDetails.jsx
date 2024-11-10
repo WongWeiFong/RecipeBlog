@@ -102,7 +102,7 @@ function PostDetails() {
       {/* Display Description */}
       <div className={postDetailsStyle.postDetails}>
         <div className={postDetailsStyle.description}>
-          <h2>Description</h2>
+          <h2>Description</h2><br />
           <p>{post.description}</p>
         </div>
       </div>

@@ -1,4 +1,41 @@
 /* Explore.module.css */
+.carouselContainer {
+  position: relative;
+  width: 100%;
+  margin-bottom: 40px;
+}
+
+.carouselSlide {
+  padding: 0 10px;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.carouselSlide img {
+  width: 100%;
+  border-radius: 10px;
+  transition: transform 0.5sease , opacity 0.5s ease;
+}
+
+.slick-center .carouselSlide img {
+  transform: scale(1.1);
+  z-index: 2;
+}
+
+/* .slick-slide {
+  margin: 0 5px; 
+} */
+
+/* .slick-slide:not(.slick-center) .carouselSlide img {
+  transform: scale(0.9);
+  opacity: 0.8;
+  z-index: 1;
+} */
+
+.slick-prev, .slick-next {
+  z-index: 3;
+}
+
+
 .exploreContainer {
     padding: 20px;
     margin-top: 10%;
@@ -20,6 +57,18 @@
     display: flex;
   flex-direction: column;
   justify-content: space-between; /* Ensure that content is spaced */
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  }
+
+  .postCard:hover {
+    transform: scale(1.05);
+  }
+
+  .postInfo {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
   }
   
   .coverImage {
@@ -29,7 +78,7 @@
   }
   
   .exploreContainer h3 {
-    word-wrap: break-word; /* Ensure the title doesn't overflow */
+  word-wrap: break-word; /* Ensure the title doesn't overflow */
   text-overflow: ellipsis; /* Add ellipsis for long text */
   overflow: hidden; /* Hide overflow text */
   }
