@@ -47,7 +47,7 @@ const Profile = () => {
 
         if (data.profilePicture) {
           // Display the image preview
-          setPreview(`http://localhost:3005/uploads/${data.profilePicture}`);
+          setPreview(`http://localhost:3005/uploads/profile-pictures/${data.profilePicture}`);
         }
       })
       .catch(error => console.error('Error fetching user data: ', error));

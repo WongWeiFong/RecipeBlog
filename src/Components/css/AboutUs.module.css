@@ -1,0 +1,84 @@
+/* General Container */
+.container {
+    max-width: 900px;
+    margin: 10% auto;
+    padding: 20px;
+    color: #333;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* About Us Section */
+  .aboutSection {
+    padding: 40px 20px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .heading {
+    font-size: 2.2em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .subheading {
+    font-size: 1.8em;
+    margin-top: 20px;
+    color: #555;
+    text-align: center;
+  }
+  
+  .text {
+    font-size: 1.1em;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    color: #555;
+    text-align: center;
+  }
+  
+  /* Contact Us Section */
+  .contactSection {
+    padding: 40px 20px;
+    text-align: center;
+  }
+  
+  .contactText {
+    font-size: 1.1em;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    color: #555;
+  }
+  
+  .contactInfo {
+    font-size: 1.1em;
+    margin: 10px 0;
+    color: #333;
+  }
+  
+  .contactInfo a {
+    color: #007bff;
+    text-decoration: none;
+    margin: 0 5px;
+  }
+  
+  .contactInfo a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Media Queries */
+  @media (max-width: 768px) {
+    .heading {
+      font-size: 1.8em;
+    }
+  
+    .subheading {
+      font-size: 1.5em;
+    }
+  
+    .text, .contactText, .contactInfo {
+      font-size: 1em;
+    }
+  }
+  

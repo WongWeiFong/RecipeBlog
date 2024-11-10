@@ -9,6 +9,9 @@ const Explore = () => {
   const [posts, setPosts] = useState([]);
   const [startX, setStartX] = useState(0); // Track starting x-coordinate for swiping
   const navigate = useNavigate();
+  const refreshPage = () => {
+    window.location.reload();
+  }
 
   const sliderSettings = {
     // dots: true,
@@ -148,7 +151,12 @@ const Explore = () => {
             </div>
           ))
         ) : (
-          <p>No posts found.</p>
+          <div>
+            <h1>No posts found.</h1>
+            <h2>Refresh the page if you think this is an error.</h2>
+            <button onClick ={refreshPage}>Refresh</button>
+          </div>
+
         )}
       </div>
     </div>
