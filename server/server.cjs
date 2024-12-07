@@ -369,18 +369,18 @@ app.post('/create-post', uploadPost.fields([{ name: 'coverImage', maxCount: 1 },
 });
 
 // Inside server.cjs or appropriate route handler
-app.get('/posts', (req, res) => {
-  const query = 'SELECT title, cover_image, post_date FROM post ORDER BY post_date DESC'; // Query to fetch posts
+// app.get('/posts', (req, res) => {
+//   const query = 'SELECT title, cover_image, post_date FROM post ORDER BY post_date DESC'; // Query to fetch posts
   
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching posts:', err);
-      return res.status(500).json({ error: 'Error fetching posts' });
-    }
+//   db.query(query, (err, results) => {
+//     if (err) {
+//       console.error('Error fetching posts:', err);
+//       return res.status(500).json({ error: 'Error fetching posts' });
+//     }
 
-    res.status(200).json(results); // Send the results to the front-end
-  });
-});
+//     res.status(200).json(results); // Send the results to the front-end
+//   });
+// });
 
 app.get('/create-post', (req, res) => {
   res.json(req.session.userId);
@@ -497,46 +497,21 @@ app.get('/explore-posts', (req, res) => {
   });
 });
 
+app.get('/explore-posts/:userId', (req, res) => {
+  const { userId } = req.params;
+  const sqlQuery = `SELECT post_id, user_id, title, cover_image, post_date FROM post WHERE user_id = ? ORDER BY post_date DESC`; // Ensure post_id is included
 
-/*
-app.get('/get-post/:id', (req, res) => {
-  const postId = req.params.id;
-
-  //Fetch post with steps (join for 2 table (foreign key))
-  const query = `
-    SELECT p.*, s.step_number, s.step_text 
-    FROM post p 
-    LEFT JOIN recipe_steps s ON p.post_id = s.post_id
-    WHERE p.post_id = ?
-    ORDER BY s.step_number;
-  `;
-
-  connection.query(query, [postId], (err, results) => {
+  db.query(sqlQuery, [userId], (err, result) => {
     if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (results.length > 0) {
-      // The first row contains the post details, and the subsequent rows contain steps
-      const post = {
-        post_id: results[0].post_id,
-        title: results[0].title,
-        recipe_time: results[0].recipe_time,
-        description: results[0].description,
-        cover_image: results[0].cover_image,
-        steps: results.map(row => ({
-          step_number: row.step_number,
-          step_text: row.step_text
-        }))
-      };
-      
-      return res.status(200).json(post);
+      console.error('Error fetching posts:', err);
+      res.status(500).send('Error fetching posts');
     } else {
-      return res.status(404).json({ message: 'Post not found' });
+      console.log(result); // Log the result to confirm post_id is being sent
+      res.json(result); // Send the result to the frontend
     }
   });
 })
-*/
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

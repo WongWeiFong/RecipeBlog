@@ -1,0 +1,55 @@
+.post-list-container {
+    margin: 10% 1% 5% 1%;
+    padding: 20px;
+  }
+  
+  .post-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  .post-table th, .post-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+  
+  .post-table th {
+    background-color: #f4f4f4;
+  }
+  
+  .cover-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+  
+  .delete-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  
+  .delete-button:hover {
+    background-color: #c0392b;
+  }
+  
+  button {
+    padding: 5px 10px;
+    margin: 0 5px;
+    cursor: pointer;
+    border-radius: 3px;
+    border: none;
+    color: white;
+    background-color: #3498db;
+  }
+  
+  button:hover {
+    background-color: #2980b9;
+  }
+  
