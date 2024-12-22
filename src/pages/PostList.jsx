@@ -101,7 +101,8 @@ const PostList = () => {
               <td>{post.title}</td>
               <td>{new Date(post.post_date).toLocaleDateString()}</td>
               <td>
-                <button onClick={() => navigate(`/explore-posts/${post.id}`)}>View</button>
+                <button onClick={() => navigate(`/post/${post.post_id}`)} className={postListStyles['view-button']} >View</button>
+                <button onClick={() => navigate(`/editpost/${post.post_id}`)} className={postListStyles['edit-button']}>Edit</button>
                 <button onClick={() => deletePost(post.id)} className={postListStyles['delete-button']}>Delete</button>
               </td>
             </tr>

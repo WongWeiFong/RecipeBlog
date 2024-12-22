@@ -72,15 +72,15 @@ const Explore = () => {
         }
     };
 
-  useEffect(() => {
-    fetch("http://localhost:3005/posts")
-      .then((response) => response.json())
-      .then((data) => {
-        // console.log(data);
-        setPosts(data);
-      })
-      .catch((error) => console.error("Error fetching error: ", error));
-  }, []);
+  // useEffect(() => {
+  //   fetch("http://localhost:3005/posts")
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       // console.log(data);
+  //       setPosts(data);
+  //     })
+  //     .catch((error) => console.error("Error fetching error: ", error));
+  // }, []);
 
   useEffect(() => {
   fetch('http://localhost:3005/explore-posts')

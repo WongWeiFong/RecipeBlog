@@ -25,6 +25,32 @@
     object-fit: cover;
     border-radius: 4px;
   }
+
+  .view-button {
+    background-color: #099fdf;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  
+  .view-button:hover {
+    background-color: #201dcf;
+  }
+  
+  .edit-button {
+    background-color: #08d20e;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  
+  .edit-button:hover {
+    background-color: #015f16;
+  }
   
   .delete-button {
     background-color: #e74c3c;

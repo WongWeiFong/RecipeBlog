@@ -459,6 +459,91 @@ app.get('/post/:id', async (req, res) => {
   })
 });
 
+app.get('/editpost/:id', async (req, res) => {
+  const postId = req.params.id;
+  console.log(`Fetching post details for post_id11: ${postId}`); // Log post ID
+
+  // Query to fetch post details, pictures, steps, and user info
+  const query = `
+    SELECT 
+      p.post_id, p.title, p.recipe_time, p.description, p.cover_image, p.post_date, u.user_id, u.name,
+    GROUP_CONCAT(DISTINCT r.picture_id ORDER BY r.picture_id) AS picture_ids,
+    GROUP_CONCAT(DISTINCT r.picture ORDER BY r.picture_id) AS pictures,
+    GROUP_CONCAT(DISTINCT i.ingredient_id ORDER BY i.ingredient_id) AS ingredient_ids,
+    GROUP_CONCAT(DISTINCT i.ingredient ORDER BY i.ingredient_id) AS ingredients,
+    GROUP_CONCAT(DISTINCT s.step_id ORDER BY s.step_id) AS step_ids,
+    GROUP_CONCAT(DISTINCT s.step_number ORDER BY s.step_id) AS step_numbers,
+    GROUP_CONCAT(DISTINCT s.step_text ORDER BY s.step_id) AS step_texts
+    FROM post p
+    JOIN user_acc u ON p.user_id = u.user_id
+    LEFT JOIN recipe_pictures r ON p.post_id = r.post_id
+    LEFT JOIN recipe_ingredient i ON p.post_id = i.post_id
+    LEFT JOIN recipe_steps s ON p.post_id = s.post_id
+    WHERE p.post_id = ?
+    GROUP BY p.post_id, p.title, p.recipe_time, p.description, p.cover_image, p.post_date, u.user_id, u.name
+    ORDER BY s.step_number;`;
+
+    db.query(query, [postId], (error, rows) => {
+      if (error) {
+        console.error('Error fetching post details:', error);
+        return res.status(500).json({ message: 'Error fetching post details', error });
+      }
+
+    if (rows.length === 0) {
+      console.error(`Post not found for post_id11: ${postId}`);
+      return res.status(404).json({ message: 'Post not found111' });
+    }
+
+    // Organize the data for pictures and steps
+    const post = {
+      post_id: rows[0].post_id,
+      title: rows[0].title,
+      recipe_time: rows[0].recipe_time,
+      description: rows[0].description,
+      cover_image: rows[0].cover_image,
+      post_date: rows[0].post_date,
+      user: {
+        user_id: rows[0].user_id,
+        name: rows[0].name,
+      },
+      // pictures: [],
+      // ingredients: [],
+      // steps: [],
+      pictures: rows[0].pictures.split(',').map(picture => ({ picture: picture })),
+      ingredients: rows[0].ingredients.split(',').map(ingredient => ({ ingredient: ingredient })),
+      steps: rows[0].step_texts.split(',').map((step_text, index) => ({
+        step_number: rows[0].step_numbers.split(',')[index],
+        step_text: step_text,
+      }))
+    };
+
+    // rows.forEach(row => {
+    //   if (row.picture) {
+    //     post.pictures.push({
+    //       picture_id: row.picture_id,
+    //       picture: row.picture
+    //     });
+    //   }
+    //   if (row.ingredient) {
+    //     post.ingredients.push({
+    //       ingredient_id: row.ingredient_id,
+    //       ingredient: row.ingredient,
+    //     });
+    //   }
+    //   if (row.step_text) {
+    //     post.steps.push({
+    //       step_id: row.step_id,
+    //       step_number: row.step_number,
+    //       step_text: row.step_text
+    //     });
+    //   }
+    // });
+
+    res.status(200).json(post);
+  
+  })
+});
+
 /*
 app.get('/post/:id', async (req, res) => {
   const postId = req.params.id;
