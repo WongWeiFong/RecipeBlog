@@ -60,7 +60,9 @@ const EditPost = () => {
         if (response.ok) {
           setTitle(data.title || "");
           setDescription(data.description || "");
-          setCoverPreview(data.cover_image || null);
+          // setCoverPreview(data.cover_image || null);
+          // setCoverPreview(`http://localhost:3005/${data.cover_image}` || null);
+          setCoverPreview(data.cover_image ? `/server/uploads/post-images/${data.cover_image}` : null);
           setRecipeTime(data.recipe_time.split(" ")[0] || "");
           setTimeUnit(data.recipe_time.split(" ")[1] || "minutes");
           setIngredients(data.ingredients || [""]);
@@ -233,7 +235,7 @@ const EditPost = () => {
             className={poststyles.imagePreviewContainer}
             onClick={() => document.getElementById("coverImage").click()}>
                 {coverPreview ? (
-                <img src={coverPreview} alt="Cover Preview" />
+                <img src={coverPreview} alt="Cover Preview" style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }} />
                 ) : (
                 <div>Click to upload an image</div>
                 )}
