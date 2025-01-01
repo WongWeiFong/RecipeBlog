@@ -16,6 +16,8 @@ const EditPost = () => {
   const [steps, setSteps] = useState([""]);
   const [coverPreview, setCoverPreview] = useState(null);
   const [picturesPreview, setPicturesPreview] = useState([]);
+  const [removedPictures, setRemovedPictures] = useState([]); // Array of filenames to remove
+  const [newPictures, setNewPictures] = useState([]); // Array of File objects (newly added)
   const [isLoading, setIsLoading] = useState(true);
 
   const navigate = useNavigate();
@@ -67,7 +69,16 @@ const EditPost = () => {
           setTimeUnit(data.recipe_time.split(" ")[1] || "minutes");
           setIngredients(data.ingredients || [""]);
           setSteps(data.steps || [""]);
-          setPicturesPreview(data.pictures ? data.pictures.map(pic => `http://localhost:3005/${pic}`) : []);
+          if (data.pictures && data.pictures.length > 0) {
+            const existingPics = data.pictures.map((pic) => ({
+              url: `/server/uploads/post-images/${pic.picture}`,
+              isExisting: true,
+              filename: pic.picture, // To identify for deletion
+            }));
+            setPicturesPreview(existingPics);
+          } else {
+            setPicturesPreview([]);
+          }
         } else {
           console.error("Error fetching post:", data.message);
         }
@@ -77,9 +88,30 @@ const EditPost = () => {
         setIsLoading(false);
       }
     };
+    //       setPicturesPreview(data.pictures ? data.pictures.map(pic => `http://localhost:3005/${pic}`) : []);
+    //     } else {
+    //       console.error("Error fetching post:", data.message);
+    //     }
+    //   } catch (error) {
+    //     console.error("Error in fetch:", error);
+    //   } finally {
+    //     setIsLoading(false);
+    //   }
+    // };
   
     fetchData();
   }, [postId]);
+
+  useEffect(() => {
+    // Cleanup function to revoke object URLs
+    return () => {
+      picturesPreview.forEach((pic) => {
+        if (!pic.isExisting) {
+          URL.revokeObjectURL(pic.url);
+        }
+      });
+    };
+  }, [picturesPreview]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -125,39 +157,55 @@ const EditPost = () => {
     e.target.style.height = `${e.target.scrollHeight}px`; // Set the height dynamically
   };
 
-  // const handleStepChange = (index, value) => {
-  //   const newSteps = [...steps];
-  //   newSteps[index] = value;
-  //   setSteps(newSteps);
-  // };
-
-  // const addStep = () => setSteps([...steps, ""]);
-  // const removeStep = (index) => setSteps(steps.filter((_, i) => i !== index));
-
   const handleStepChange = (e, index) => {
     const updatedSteps = [...steps];
-    updatedSteps[index] = { ...steps[index], text: e.target.value };
+    // updatedSteps[index] = { ...steps[index], text: e.target.value };
+    updatedSteps[index] = e.target.value;
     setSteps(updatedSteps);
   };
   
   const addStep = () => {
-    setSteps([...steps, { text: "" }]);
+    setSteps([...steps, "" ]);
   };
   
   const removeStep = (index) => {
     setSteps(steps.filter((_, i) => i !== index));
   };
 
+  // const handlePicturesChange = (e) => {
+  //   const files = Array.from(e.target.files);
+  //   const previews = files.map((file) => URL.createObjectURL(file));
+  //   setPictures([...pictures, ...files]);
+  //   setPicturesPreview([...picturesPreview, ...previews]);
+  // };
+
+  // const handleRemovePicture = (index) => {
+  //   setPictures(pictures.filter((_, i) => i !== index));
+  //   setPicturesPreview(picturesPreview.filter((_, i) => i !== index));
+  // };
+
   const handlePicturesChange = (e) => {
     const files = Array.from(e.target.files);
-    const previews = files.map((file) => URL.createObjectURL(file));
-    setPictures([...pictures, ...files]);
-    setPicturesPreview([...picturesPreview, ...previews]);
+    const newPreviews = files.map((file) => ({
+      url: URL.createObjectURL(file),
+      file: file,
+      isExisting: false,
+    }));
+
+    setPicturesPreview([...picturesPreview, ...newPreviews]);
+    setNewPictures([...newPictures, ...files]);
   };
 
   const handleRemovePicture = (index) => {
-    setPictures(pictures.filter((_, i) => i !== index));
+    const pictureToRemove = picturesPreview[index];
+    if (pictureToRemove.isExisting) {
+      setRemovedPictures([...removedPictures, pictureToRemove.filename]);
+    }
     setPicturesPreview(picturesPreview.filter((_, i) => i !== index));
+    // If it's a new picture, remove from newPictures as well
+    if (!pictureToRemove.isExisting && pictureToRemove.file) {
+      setNewPictures(newPictures.filter((_, i) => i !== index));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -174,8 +222,17 @@ const EditPost = () => {
     steps.forEach((step, index) => {
       formData.append(`steps[${index}]`, step);
     });
-    pictures.forEach((picture) => {
+    // pictures.forEach((picture) => {
+    //   formData.append("pictures", picture);
+    // });
+    // Append new pictures
+    newPictures.forEach((picture) => {
       formData.append("pictures", picture);
+    });
+
+    // Append removed pictures
+    removedPictures.forEach((pic) => {
+      formData.append("removedPictures[]", pic);
     });
 
     try {
@@ -188,7 +245,7 @@ const EditPost = () => {
 
       if (response.ok) {
         alert("Post updated successfully!");
-        navigate(`/posts/${postId}`);
+        navigate(`/myrecipe`);
       } else {
         const errorData = await response.json();
         alert(`Error: ${errorData.message}`);
@@ -283,7 +340,7 @@ const EditPost = () => {
                 key={index}
                 type="text"
                 placeholder="Enter ingredient"
-                value={ingredient.ingredient}
+                value={ingredient}
                 // onChange={(e) => handleIngredientChange(index, e.target.value)}
                 onChange={(e) => handleIngredientChange(e, index)}
               />
@@ -311,7 +368,7 @@ const EditPost = () => {
                 </label>
                 <textarea
             id={`step-${stepIndex + 1}`}
-            value={step.step_text}
+            value={step}
             onChange={(e) => handleStepChange(e, stepIndex)}
             placeholder=""
             onInput={handleAutoResize}
@@ -344,10 +401,10 @@ const EditPost = () => {
         <div className={poststyles.formGroup}>
           <label>Additional Pictures:</label>
           <div className={poststyles.picturesPreviewContainer}>
-            {pictures.map((pic, index) => (
+            {picturesPreview.map((pic, index) => (
               <div key={index} className={poststyles.pictureContainer}>
                 <img
-                  src={URL.createObjectURL(pic)}
+                  src={pic.url}
                   alt={`picture ${index + 1}`}
                   className={poststyles.picturePreview}
                 />

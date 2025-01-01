@@ -5,6 +5,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs'); // Required for file operations
 
 const app = express();
 // const router = express.Router();
@@ -76,6 +77,7 @@ const uploadPost = multer({ storage: postStorage });
 // ]);
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // app.get('/signup', (req, res) => {
 //   res.json(req.body); 
@@ -506,15 +508,19 @@ app.get('/editpost/:id', async (req, res) => {
         user_id: rows[0].user_id,
         name: rows[0].name,
       },
+      pictures: rows[0].pictures ? rows[0].pictures.split(',').map(picture => ({ picture: picture })) : [],
+      ingredients: rows[0].ingredients ? rows[0].ingredients.split(',') : [],
+      steps: rows[0].step_texts ? rows[0].step_texts.split(',') : [],
+
       // pictures: [],
       // ingredients: [],
       // steps: [],
-      pictures: rows[0].pictures.split(',').map(picture => ({ picture: picture })),
-      ingredients: rows[0].ingredients.split(',').map(ingredient => ({ ingredient: ingredient })),
-      steps: rows[0].step_texts.split(',').map((step_text, index) => ({
-        step_number: rows[0].step_numbers.split(',')[index],
-        step_text: step_text,
-      }))
+      // pictures: rows[0].pictures ? rows[0].pictures.split(',').map(picture => ({ picture: picture })) : [],
+      // ingredients: rows[0].ingredients.split(',').map(ingredient => ({ ingredient: ingredient })),
+      // steps: rows[0].step_texts.split(',').map((step_text, index) => ({
+      //   step_number: rows[0].step_numbers.split(',')[index],
+      //   step_text: step_text,
+      // }))
     };
 
     // rows.forEach(row => {
@@ -543,6 +549,196 @@ app.get('/editpost/:id', async (req, res) => {
   
   })
 });
+
+app.put('/posts/:id', uploadPost.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'pictures', maxCount: 10 }]), async (req, res) => {
+  const postId = req.params.id;
+  const userId = req.session.userId;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
+
+  // Extract fields from formData
+  const { title, recipeTime, description } = req.body;
+  const coverImage = req.files.coverImage ? req.files.coverImage[0].filename : null;
+  const ingredients = req.body.ingredients || [];
+  const steps = req.body.steps || [];
+  const removedPictures = req.body.removedPictures || []; // Array of filenames to remove
+
+  // Validation
+  if (!title || !recipeTime || !description) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  if (!Array.isArray(ingredients) || !Array.isArray(steps)) {
+    return res.status(400).json({ message: 'Ingredients and steps must be arrays.' });
+  }
+
+  // Begin Transaction
+  db.beginTransaction((err) => {
+    if (err) {
+      console.error('Transaction Error:', err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+
+    // Step 1: Update the Post
+    let updatePostQuery = 'UPDATE post SET title = ?, recipe_time = ?, description = ?';
+    const updatePostValues = [title, recipeTime, description];
+
+    if (coverImage) {
+      updatePostQuery += ', cover_image = ?';
+      updatePostValues.push(coverImage);
+    }
+
+    updatePostQuery += ' WHERE post_id = ? AND user_id = ?';
+    updatePostValues.push(postId, userId);
+
+    db.query(updatePostQuery, updatePostValues, (err, result) => {
+      if (err) {
+        console.error('Error Updating Post:', err);
+        return db.rollback(() => {
+          res.status(500).json({ message: 'Error updating post' });
+        });
+      }
+
+      // Step 2: Delete Removed Pictures
+      if (removedPictures.length > 0) {
+        const deletePicturesQuery = 'DELETE FROM recipe_pictures WHERE post_id = ? AND picture IN (?)';
+        db.query(deletePicturesQuery, [postId, removedPictures], (err, result) => {
+          if (err) {
+            console.error('Error Deleting Pictures:', err);
+            return db.rollback(() => {
+              res.status(500).json({ message: 'Error deleting pictures' });
+            });
+          }
+
+          // Delete files from the server
+          removedPictures.forEach((filename) => {
+            const filePath = path.join(__dirname, 'uploads/post-images/', filename);
+            fs.unlink(filePath, (err) => {
+              if (err) {
+                console.error(`Error deleting file ${filename}:`, err);
+                // Not throwing error here to allow transaction to continue
+              } else {
+                console.log(`Deleted file: ${filename}`);
+              }
+            });
+          });
+
+          proceedWithUpdate();
+        });
+      } else {
+        proceedWithUpdate();
+      }
+
+      function proceedWithUpdate() {
+        // Step 3: Update Ingredients
+        // Delete existing ingredients and re-insert
+        const deleteIngredientsQuery = 'DELETE FROM recipe_ingredient WHERE post_id = ?';
+        db.query(deleteIngredientsQuery, [postId], (err, result) => {
+          if (err) {
+            console.error('Error Deleting Ingredients:', err);
+            return db.rollback(() => {
+              res.status(500).json({ message: 'Error updating ingredients' });
+            });
+          }
+
+          if (ingredients.length > 0) {
+            const insertIngredientsQuery = 'INSERT INTO recipe_ingredient (post_id, ingredient) VALUES ?';
+            const ingredientData = ingredients.map((ingredient) => [postId, ingredient]);
+
+            db.query(insertIngredientsQuery, [ingredientData], (err, result) => {
+              if (err) {
+                console.error('Error Inserting Ingredients:', err);
+                return db.rollback(() => {
+                  res.status(500).json({ message: 'Error updating ingredients' });
+                });
+              }
+
+              proceedWithSteps();
+            });
+          } else {
+            proceedWithSteps();
+          }
+        });
+
+        // Step 4: Update Steps
+        function proceedWithSteps() {
+          // Delete existing steps and re-insert
+          const deleteStepsQuery = 'DELETE FROM recipe_steps WHERE post_id = ?';
+          db.query(deleteStepsQuery, [postId], (err, result) => {
+            if (err) {
+              console.error('Error Deleting Steps:', err);
+              return db.rollback(() => {
+                res.status(500).json({ message: 'Error updating steps' });
+              });
+            }
+
+            if (steps.length > 0) {
+              const insertStepsQuery = 'INSERT INTO recipe_steps (post_id, step_number, step_text) VALUES ?';
+              const stepData = steps.map((step, index) => [postId, index + 1, step]);
+
+              db.query(insertStepsQuery, [stepData], (err, result) => {
+                if (err) {
+                  console.error('Error Inserting Steps:', err);
+                  return db.rollback(() => {
+                    res.status(500).json({ message: 'Error updating steps' });
+                  });
+                }
+
+                proceedWithPictures();
+              });
+            } else {
+              proceedWithPictures();
+            }
+          });
+        }
+
+        // Step 5: Insert New Pictures
+        function proceedWithPictures() {
+          if (req.files.pictures && req.files.pictures.length > 0) {
+            const insertPicturesQuery = 'INSERT INTO recipe_pictures (post_id, picture) VALUES ?';
+            const pictureData = req.files.pictures.map((file) => [postId, file.filename]);
+
+            db.query(insertPicturesQuery, [pictureData], (err, result) => {
+              if (err) {
+                console.error('Error Inserting Pictures:', err);
+                return db.rollback(() => {
+                  res.status(500).json({ message: 'Error adding new pictures' });
+                });
+              }
+
+              // All operations successful, commit the transaction
+              db.commit((err) => {
+                if (err) {
+                  console.error('Commit Error:', err);
+                  return db.rollback(() => {
+                    res.status(500).json({ message: 'Error committing transaction' });
+                  });
+                }
+
+                res.status(200).json({ message: 'Post updated successfully' });
+              });
+            });
+          } else {
+            // No new pictures to add, commit the transaction
+            db.commit((err) => {
+              if (err) {
+                console.error('Commit Error:', err);
+                return db.rollback(() => {
+                  res.status(500).json({ message: 'Error committing transaction' });
+                });
+              }
+
+              res.status(200).json({ message: 'Post updated successfully' });
+            });
+          }
+        }
+      }
+    });
+  });
+});
+
 
 /*
 app.get('/post/:id', async (req, res) => {
