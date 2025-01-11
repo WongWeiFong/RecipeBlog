@@ -30,7 +30,7 @@ const PostList = () => {
       .then(data => {
         if (data.success) {
           alert('Post deleted successfully.');
-          setPosts(posts.filter(post => post.id !== postId));  // Update posts list after deletion
+          setPosts(posts.filter(post => post.post_id !== postId));  // Update posts list after deletion
         } else {
           alert('Failed to delete the post.');
         }
@@ -89,7 +89,7 @@ const PostList = () => {
         <tbody>
           {posts.length > 0 ? (
           posts.map((post, index) => (
-            <tr key={post.id}>
+            <tr key={post.post_id}>
               <td>{index + 1}</td>
               <td>
                 <img
@@ -103,7 +103,7 @@ const PostList = () => {
               <td>
                 <button onClick={() => navigate(`/post/${post.post_id}`)} className={postListStyles['view-button']} >View</button>
                 <button onClick={() => navigate(`/editpost/${post.post_id}`)} className={postListStyles['edit-button']}>Edit</button>
-                <button onClick={() => deletePost(post.id)} className={postListStyles['delete-button']}>Delete</button>
+                <button onClick={() => deletePost(post.post_id)} className={postListStyles['delete-button']}>Delete</button>
               </td>
             </tr>
           ))

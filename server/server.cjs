@@ -511,10 +511,6 @@ app.get('/editpost/:id', async (req, res) => {
       pictures: rows[0].pictures ? rows[0].pictures.split(',').map(picture => ({ picture: picture })) : [],
       ingredients: rows[0].ingredients ? rows[0].ingredients.split(',') : [],
       steps: rows[0].step_texts ? rows[0].step_texts.split(',') : [],
-
-      // pictures: [],
-      // ingredients: [],
-      // steps: [],
       // pictures: rows[0].pictures ? rows[0].pictures.split(',').map(picture => ({ picture: picture })) : [],
       // ingredients: rows[0].ingredients.split(',').map(ingredient => ({ ingredient: ingredient })),
       // steps: rows[0].step_texts.split(',').map((step_text, index) => ({
@@ -739,30 +735,92 @@ app.put('/posts/:id', uploadPost.fields([{ name: 'coverImage', maxCount: 1 }, { 
   });
 });
 
+app.delete('/explore-posts/delete/:postId', (req, res) => {
+  const { postId } = req.params;
 
-/*
-app.get('/post/:id', async (req, res) => {
-  const postId = req.params.id;
+  db.beginTransaction((err) => {
+    if (err) {
+      console.error('Error starting transaction:', err);
+      return res.status(500).json({ success: false, message: 'Transaction error' });
+    }
 
-  try {
-      const [post] = await db.promise().query('SELECT * FROM post WHERE post_id = ?', [postId]);
-      const [steps] = await db.promise().query('SELECT * FROM recipe_steps WHERE post_id = ? ORDER BY step_number', [postId]);
-      const [pictures] = await db.promise().query('SELECT * FROM recipe_pictures WHERE post_id = ?', [postId]);
-
-      if (post.length === 0) {
-          return res.status(404).json({ error: 'Post not found' });
+    // Delete from recipe_ingredient
+    db.query('DELETE FROM recipe_ingredient WHERE post_id = ?', [postId], (err) => {
+      if (err) {
+        console.error('Error deleting from recipe_ingredient:', err);
+        return db.rollback(() => res.status(500).json({ success: false, message: 'Error deleting recipe ingredients' }));
       }
 
-      res.json({
-          post: post[0],
-          steps,
-          pictures
+      // Delete from recipe_steps
+      db.query('DELETE FROM recipe_steps WHERE post_id = ?', [postId], (err) => {
+        if (err) {
+          console.error('Error deleting from recipe_steps:', err);
+          return db.rollback(() => res.status(500).json({ success: false, message: 'Error deleting recipe steps' }));
+        }
+
+        // Delete from recipe_pictures
+        db.query('DELETE FROM recipe_pictures WHERE post_id = ?', [postId], (err) => {
+          if (err) {
+            console.error('Error deleting from recipe_pictures:', err);
+            return db.rollback(() => res.status(500).json({ success: false, message: 'Error deleting recipe pictures' }));
+          }
+
+          // Finally, delete from post
+          db.query('DELETE FROM post WHERE post_id = ?', [postId], (err) => {
+            if (err) {
+              console.error('Error deleting from post:', err);
+              return db.rollback(() => res.status(500).json({ success: false, message: 'Error deleting post' }));
+            }
+
+            // Commit the transaction
+            db.commit((err) => {
+              if (err) {
+                console.error('Error committing transaction:', err);
+                return db.rollback(() => res.status(500).json({ success: false, message: 'Transaction commit failed' }));
+              }
+              return res.json({ success: true, message: 'Post is deleted successfully' });
+            });
+          });
+        });
       });
-  } catch (err) {
-      res.status(500).json({ error: 'Error retrieving post data' });
-  }
+    });
+  });
 });
-*/
+
+app.post('/post/:id/comment', (req, res) => {
+  const { id } = req.params;
+  const { text, author } = req.body;
+  const date = new Date();
+
+  const query = `INSERT INTO post_comments (post_id, text, author, date) VALUES (?, ?, ?, ?)`;
+  db.query(query, [id, text, author, date], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Failed to add comment" });
+    }
+    res.status(200).json({ id: result.insertId, text, author, date });
+  });
+});
+
+app.get('/post/:id/comments', (req, res) => {
+  const { id } = req.params;
+
+  const query = `
+    SELECT c.*, u.name 
+    FROM post_comments c 
+    JOIN user_acc u ON c.author = u.user_id 
+    WHERE c.post_id = ? 
+    ORDER BY c.date DESC
+  `;
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Failed to fetch comments' });
+    }
+    res.status(200).json(results); // Send the comments with user names as JSON response
+  });
+});
+
 
 app.get('/explore-posts', (req, res) => {
   const sqlQuery = `SELECT post_id, user_id, title, cover_image, post_date FROM post ORDER BY post_date DESC`; // Ensure post_id is included
