@@ -821,6 +821,17 @@ app.get('/post/:id/comments', (req, res) => {
   });
 });
 
+app.delete("/explore-posts/delete/:postId", async (req, res) => {
+  const { postId } = req.params;
+  try {
+    await db.query("DELETE FROM posts WHERE post_id = ?", [postId]);
+
+    return res.json({ success: true, message: "Post deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting post:", err);
+    return res.status(500).json({ success: false, message: "Failed to delete post" });
+  }
+});
 
 app.get('/explore-posts', (req, res) => {
   const sqlQuery = `SELECT post_id, user_id, title, cover_image, post_date FROM post ORDER BY post_date DESC`; // Ensure post_id is included

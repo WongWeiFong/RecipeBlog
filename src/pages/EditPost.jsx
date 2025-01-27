@@ -6,104 +6,115 @@ import { useNavigate, useParams } from "react-router-dom";
 
 const EditPost = () => {
   const [userId, setUserId] = useState(null);
+  const [postCreatorId, setPostCreatorId] = useState(null);
+
   const [title, setTitle] = useState("");
   const [recipeTime, setRecipeTime] = useState("");
   const [timeUnit, setTimeUnit] = useState("minutes");
   const [description, setDescription] = useState("");
   const [ingredients, setIngredients] = useState([""]);
   const [coverImage, setCoverImage] = useState(null);
-  const [pictures, setPictures] = useState([]);
   const [steps, setSteps] = useState([""]);
   const [coverPreview, setCoverPreview] = useState(null);
+
   const [picturesPreview, setPicturesPreview] = useState([]);
-  const [removedPictures, setRemovedPictures] = useState([]); // Array of filenames to remove
-  const [newPictures, setNewPictures] = useState([]); // Array of File objects (newly added)
+  const [removedPictures, setRemovedPictures] = useState([]);
+  const [newPictures, setNewPictures] = useState([]);
+
   const [isLoading, setIsLoading] = useState(true);
+  const [notAuthorized, setNotAuthorized] = useState(false);
 
   const navigate = useNavigate();
-  const { postId } = useParams(); // Get post ID from the URL
+  const { postId } = useParams();
 
+  // 1) Check authentication on mount
   useEffect(() => {
-    console.log("Post ID:", postId);
-  }, [postId]);
+    checkAuth();
+  }, []);
 
-//   useEffect(() => {
-//     // Fetch the post data for editing
-//     fetch(`http://localhost:3005/editpost/${postId}`, {
-//       method: "GET",
-//       credentials: "include",
-//     })
-//       .then((response) => response.json())
-//       .then((data) => {
-//         // Populate fields with the fetched data
-//         setTitle(data.title || "");
-//         setRecipeTime(data.recipeTime.split(" ")[0]);
-//         setTimeUnit(data.recipeTime.split(" ")[1]);
-//         setDescription(data.description);
-//         setIngredients(data.ingredients);
-//         setSteps(data.steps);
-//         setCoverPreview(data.coverImage);
-//         setPicturesPreview(data.pictures || []);
-//       })
-//       .catch((error) => console.error("Error fetching post data:", error));
-//   }, [postId]);
+  // Define the function *outside* of useEffect, so it’s reusable
+  const fetchPostData = async (id) => {
+    try {
+      console.log("Fetching post data...");
+      const response = await fetch(`http://localhost:3005/editpost/${id}`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const data = await response.json();
+      console.log("Fetched data:", data);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        console.log("Fetching post data...");
-        const response = await fetch(`http://localhost:3005/editpost/${postId}`, {
-          method: "GET",
-          credentials: "include",
-        });
-        const data = await response.json();
-        console.log("Fetched data:", data);
-  
-        if (response.ok) {
-          setTitle(data.title || "");
-          setDescription(data.description || "");
-          // setCoverPreview(data.cover_image || null);
-          // setCoverPreview(`http://localhost:3005/${data.cover_image}` || null);
-          setCoverPreview(data.cover_image ? `/server/uploads/post-images/${data.cover_image}` : null);
-          setRecipeTime(data.recipe_time.split(" ")[0] || "");
-          setTimeUnit(data.recipe_time.split(" ")[1] || "minutes");
-          setIngredients(data.ingredients || [""]);
-          setSteps(data.steps || [""]);
-          if (data.pictures && data.pictures.length > 0) {
-            const existingPics = data.pictures.map((pic) => ({
-              url: `/server/uploads/post-images/${pic.picture}`,
-              isExisting: true,
-              filename: pic.picture, // To identify for deletion
-            }));
-            setPicturesPreview(existingPics);
-          } else {
-            setPicturesPreview([]);
-          }
+      if (response.ok) {
+        setTitle(data.title || "");
+        setDescription(data.description || "");
+        setCoverPreview(
+          data.cover_image
+            ? `/server/uploads/post-images/${data.cover_image}`
+            : null
+        );
+        setRecipeTime(data.recipe_time.split(" ")[0] || "");
+        setTimeUnit(data.recipe_time.split(" ")[1] || "minutes");
+        setIngredients(data.ingredients || [""]);
+        setSteps(data.steps || [""]);
+
+        // store the post's creator ID
+        setPostCreatorId(data.user.user_id);
+        console.log("Post creator ID:", data.user.user_id);
+
+        if (data.pictures && data.pictures.length > 0) {
+          const existingPics = data.pictures.map((pic) => ({
+            url: `/server/uploads/post-images/${pic.picture}`,
+            isExisting: true,
+            filename: pic.picture,
+          }));
+          setPicturesPreview(existingPics);
         } else {
-          console.error("Error fetching post:", data.message);
+          setPicturesPreview([]);
         }
-      } catch (error) {
-        console.error("Error in fetch:", error);
-      } finally {
-        setIsLoading(false);
+      } else {
+        console.error("Error fetching post:", data.message);
       }
-    };
-    //       setPicturesPreview(data.pictures ? data.pictures.map(pic => `http://localhost:3005/${pic}`) : []);
-    //     } else {
-    //       console.error("Error fetching post:", data.message);
-    //     }
-    //   } catch (error) {
-    //     console.error("Error in fetch:", error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // };
-  
-    fetchData();
+    } catch (error) {
+      console.error("Error in fetch:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 2) Fetch the post data once we have a postId
+  useEffect(() => {
+    if (postId) {
+      fetchPostData(postId);
+    }
   }, [postId]);
 
+  // 3) Compare userId and postCreatorId
   useEffect(() => {
-    // Cleanup function to revoke object URLs
+    if (userId && postCreatorId && userId !== postCreatorId) {
+      setNotAuthorized(true);
+    }
+  }, [userId, postCreatorId]);
+
+  // 4) Check Auth function
+  const checkAuth = () => {
+    fetch("http://localhost:3005/check-auth", {
+      method: "GET",
+      credentials: "include",
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Auth data:", data);
+        if (data.isAuthenticated) {
+          setUserId(data.userId);
+        } else {
+          alert("Please sign in before editing posts");
+          navigate("/signinup");
+        }
+      })
+      .catch((error) => console.error("Error checking authentication: ", error));
+  };
+
+  // Cleanup function to revoke object URLs
+  useEffect(() => {
     return () => {
       picturesPreview.forEach((pic) => {
         if (!pic.isExisting) {
@@ -117,97 +128,101 @@ const EditPost = () => {
     return <div>Loading...</div>;
   }
 
-  if (!title && !description) {
-    return <div>Error: Unable to load post data. Please try again.</div>;
+  if (notAuthorized) {
+    return (
+      <div className={poststyles.notAuthorizedContainer}>
+        <div className={poststyles.notAuthorizedBox}>
+          <p className={poststyles.notAuthorizedMessage}>
+            Error: You are not authorized to edit this post.
+          </p>
+        </div>
+      </div>
+    );
   }
 
+  if (!title && !description) {
+    return (
+     <div className={poststyles.notAuthorizedContainer}>
+        <div className={poststyles.notAuthorizedBox}>
+          <p className={poststyles.notAuthorizedMessage}>
+          Error: Unable to load post data. Please try again.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Handlers ------------------------------------------------
   const handleCoverImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setCoverImage(file);
-      setCoverPreview(URL.createObjectURL(file)); // Preview for cover image
+      setCoverPreview(URL.createObjectURL(file));
     }
   };
-
-  // const handleIngredientChange = (index, value) => {
-  //   const newIngredients = [...ingredients];
-  //   newIngredients[index] = value;
-  //   setIngredients(newIngredients);
-  // };
-
-  // const handleAddIngredient = () => setIngredients([...ingredients, ""]);
-  // const handleRemoveIngredient = (index) => setIngredients(ingredients.filter((_, i) => i !== index));
 
   const handleIngredientChange = (e, index) => {
     const updatedIngredients = [...ingredients];
     updatedIngredients[index] = e.target.value;
     setIngredients(updatedIngredients);
   };
-  
+
   const handleAddIngredient = () => {
     setIngredients([...ingredients, ""]);
   };
-  
+
   const handleRemoveIngredient = (index) => {
     setIngredients(ingredients.filter((_, i) => i !== index));
   };
 
   const handleAutoResize = (e) => {
-    e.target.style.height = "auto"; // Reset the height to auto to recalculate
-    e.target.style.height = `${e.target.scrollHeight}px`; // Set the height dynamically
+    e.target.style.height = "auto";
+    e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
   const handleStepChange = (e, index) => {
     const updatedSteps = [...steps];
-    // updatedSteps[index] = { ...steps[index], text: e.target.value };
     updatedSteps[index] = e.target.value;
     setSteps(updatedSteps);
   };
-  
+
   const addStep = () => {
-    setSteps([...steps, "" ]);
+    setSteps([...steps, ""]);
   };
-  
+
   const removeStep = (index) => {
     setSteps(steps.filter((_, i) => i !== index));
   };
-
-  // const handlePicturesChange = (e) => {
-  //   const files = Array.from(e.target.files);
-  //   const previews = files.map((file) => URL.createObjectURL(file));
-  //   setPictures([...pictures, ...files]);
-  //   setPicturesPreview([...picturesPreview, ...previews]);
-  // };
-
-  // const handleRemovePicture = (index) => {
-  //   setPictures(pictures.filter((_, i) => i !== index));
-  //   setPicturesPreview(picturesPreview.filter((_, i) => i !== index));
-  // };
 
   const handlePicturesChange = (e) => {
     const files = Array.from(e.target.files);
     const newPreviews = files.map((file) => ({
       url: URL.createObjectURL(file),
-      file: file,
+      file,
       isExisting: false,
     }));
 
-    setPicturesPreview([...picturesPreview, ...newPreviews]);
-    setNewPictures([...newPictures, ...files]);
+    setPicturesPreview((prev) => [...prev, ...newPreviews]);
+    setNewPictures((prev) => [...prev, ...files]);
   };
 
   const handleRemovePicture = (index) => {
     const pictureToRemove = picturesPreview[index];
+
+    // If it was an existing picture on the server
     if (pictureToRemove.isExisting) {
-      setRemovedPictures([...removedPictures, pictureToRemove.filename]);
+      setRemovedPictures((prev) => [...prev, pictureToRemove.filename]);
     }
-    setPicturesPreview(picturesPreview.filter((_, i) => i !== index));
-    // If it's a new picture, remove from newPictures as well
+    // Remove from local preview
+    setPicturesPreview((prev) => prev.filter((_, i) => i !== index));
+
+    // If it's a newly added picture, remove it from newPictures as well
     if (!pictureToRemove.isExisting && pictureToRemove.file) {
-      setNewPictures(newPictures.filter((_, i) => i !== index));
+      setNewPictures((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
+  // --- Submitting (PUT request) --------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -215,22 +230,20 @@ const EditPost = () => {
     formData.append("title", title);
     formData.append("recipeTime", `${recipeTime} ${timeUnit}`);
     formData.append("description", description);
-    formData.append("coverImage", coverImage); // File upload (cover image)
+    formData.append("coverImage", coverImage);
+
     ingredients.forEach((ingredient, index) => {
       formData.append(`ingredients[${index}]`, ingredient);
     });
+
     steps.forEach((step, index) => {
       formData.append(`steps[${index}]`, step);
     });
-    // pictures.forEach((picture) => {
-    //   formData.append("pictures", picture);
-    // });
-    // Append new pictures
+
     newPictures.forEach((picture) => {
       formData.append("pictures", picture);
     });
 
-    // Append removed pictures
     removedPictures.forEach((pic) => {
       formData.append("removedPictures[]", pic);
     });
@@ -241,21 +254,23 @@ const EditPost = () => {
         body: formData,
         credentials: "include",
       });
+
+      // Only call response.json() once:
       const data = await response.json();
 
       if (response.ok) {
         alert("Post updated successfully!");
         navigate(`/myrecipe`);
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message}`);
-    }
+        alert(`Error: ${data.message}`);
+      }
     } catch (error) {
       console.error("Error during updating recipe:", error);
       alert("An error occurred while updating the recipe.");
     }
   };
 
+  // --- JSX -----------------------------------------------------
   return (
     <div className={poststyles.createPostContainer}>
       <h1>Edit Recipe</h1>
@@ -287,24 +302,30 @@ const EditPost = () => {
         {/* Cover Image */}
         <div className={poststyles.formGroup}>
           <label>Cover Image</label>
-          <div className={poststyles.alignment}>
-            <div 
-            className={poststyles.imagePreviewContainer}
-            onClick={() => document.getElementById("coverImage").click()}>
-                {coverPreview ? (
-                <img src={coverPreview} alt="Cover Preview" style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }} />
-                ) : (
+          <div
+            className={poststyles.alignment}
+            onClick={() => document.getElementById("coverImage").click()}
+            style={{ cursor: "pointer" }}
+          >
+            <div className={poststyles.imagePreviewContainer}>
+              {coverPreview ? (
+                <img
+                  src={coverPreview}
+                  alt="Cover Preview"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
                 <div>Click to upload an image</div>
-                )}
+              )}
             </div>
-            <input
-                type="file"
-                id="coverImage"
-                accept="image/*"
-                onChange={handleCoverImageChange}
-                style={{ display: "none" }}
-            />
           </div>
+          <input
+            type="file"
+            id="coverImage"
+            accept="image/*"
+            onChange={handleCoverImageChange}
+            style={{ display: "none" }}
+          />
         </div>
 
         {/* Recipe Time */}
@@ -337,11 +358,9 @@ const EditPost = () => {
             <div key={index} className={poststyles.ingredientGroup}>
               <label htmlFor={`${index + 1}`}>{index + 1}</label>
               <input
-                key={index}
                 type="text"
                 placeholder="Enter ingredient"
                 value={ingredient}
-                // onChange={(e) => handleIngredientChange(index, e.target.value)}
                 onChange={(e) => handleIngredientChange(e, index)}
               />
               <button
@@ -359,40 +378,37 @@ const EditPost = () => {
         </div>
 
         {/* Steps */}
-          <div className={poststyles.stepsContainer}>
-            <h3>Steps</h3>
-            {steps.map((step, stepIndex) => (
-              <div key={stepIndex} className={poststyles.stepGroup}>
-                <label htmlFor={`step-${stepIndex + 1}`}>
-            Steps {stepIndex + 1}
-                </label>
-                <textarea
-            id={`step-${stepIndex + 1}`}
-            value={step}
-            onChange={(e) => handleStepChange(e, stepIndex)}
-            placeholder=""
-            onInput={handleAutoResize}
-            rows="4"
-            required
-                />
-                <button
-            type="button"
-            onClick={() => removeStep(stepIndex)}
-            className={poststyles.removeStepButton}
-            disabled={steps.length === 1}
-                >
-            Remove Step
-                </button>
-
-              </div>
+        <div className={poststyles.stepsContainer}>
+          <h3>Steps</h3>
+          {steps.map((step, stepIndex) => (
+            <div key={stepIndex} className={poststyles.stepGroup}>
+              <label htmlFor={`step-${stepIndex + 1}`}>
+                Step {stepIndex + 1}
+              </label>
+              <textarea
+                id={`step-${stepIndex + 1}`}
+                value={step}
+                onChange={(e) => handleStepChange(e, stepIndex)}
+                onInput={handleAutoResize}
+                rows="4"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => removeStep(stepIndex)}
+                className={poststyles.removeStepButton}
+                disabled={steps.length === 1}
+              >
+                Remove Step
+              </button>
+            </div>
           ))}
-
           <button
-              type="button"
-              onClick={addStep}
-              className={poststyles.addStepButton}
-            >
-              {/* disabled={steps.length === 10}> */}+ Add Step
+            type="button"
+            onClick={addStep}
+            className={poststyles.addStepButton}
+          >
+            + Add Step
           </button>
         </div>
         <br />
@@ -418,8 +434,7 @@ const EditPost = () => {
                       src={trashIcon}
                       alt="Remove"
                       className={poststyles.actionIcon}
-                    />{" "}
-                    {/* Trash icon */}
+                    />
                   </button>
                   <button
                     type="button"
@@ -432,8 +447,7 @@ const EditPost = () => {
                       src={cameraIcon}
                       alt="Reupload"
                       className={poststyles.actionIcon}
-                    />{" "}
-                    {/* Camera icon */}
+                    />
                   </button>
                 </div>
                 <input
@@ -447,6 +461,7 @@ const EditPost = () => {
               </div>
             ))}
           </div>
+          {/* "Add More Pictures" area */}
           <div
             className={poststyles.imagePreviewContainer}
             onClick={() => document.getElementById("pictures").click()}
@@ -461,8 +476,7 @@ const EditPost = () => {
               src={cameraIcon}
               alt="Add Pictures"
               style={{ width: "30px", height: "30px" }}
-            />{" "}
-            {/* Use camera icon for adding pictures */}
+            />
             <div> + Add More Pictures</div>
           </div>
           <input
